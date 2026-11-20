@@ -75,6 +75,37 @@ class RecommendationEngine:
             top_k=12
         )
 
+        # 2a. Filter candidates by seasonal eligibility (must be suitable for the chosen season)
+        eligible_candidates = []
+        for cand in ml_candidates:
+            crop_name = cand["crop"]
+            profile = get_crop_profile(crop_name)
+            # If crop profile missing or season not listed, exclude
+            suitable_seasons = profile.get("suitable_seasons", []) if profile else []
+            if not suitable_seasons:
+                # If no season info, assume eligible
+                eligible_candidates.append(cand)
+            else:
+                # Normalize season strings for comparison
+                season_norm = season.lower()
+                seasons_norm = [s.lower() for s in suitable_seasons]
+                if season_norm in seasons_norm:
+                    eligible_candidates.append(cand)
+        # If no eligible candidates, fall back to original list
+        if not eligible_candidates:
+            eligible_candidates = ml_candidates
+        # Use filtered list for further evaluation
+        ml_candidates = eligible_candidates
+
+        ml_candidates = self.predictor.predict_candidates(
+            state=state,
+            season=season,
+            area_ha=area_ha,
+            annual_rainfall_mm=annual_rf,
+            seasonal_rainfall_mm=seasonal_rf,
+            top_k=12
+        )
+
         # 3. Agronomic Assessment for each candidate
         evaluated_crops = []
         for cand in ml_candidates:
@@ -109,7 +140,25 @@ class RecommendationEngine:
             )
 
             # 4. Transparent Composite Suitability Score Calculation
-            # Weights: Model 40%, Water 25%, Soil 15%, Weather 10%, Preference 10%
+            # Base weights: Model 35%, Water 25%, Soil 15%, Weather 15%, Preference 10%
+            # If soil type is unknown, reallocate the soil weight (15%) to Model (+5%) and Water (+10%).
+            if soil_type in ["Unknown", "Other", None, ""]:
+                # Adjusted weights: Model 40%, Water 35%, Weather 15%, Preference 10%
+                composite_score = (
+                    0.40 * model_score +
+                    0.35 * water_score +
+                    0.15 * weather_score +
+                    0.10 * pref_score
+                )
+            else:
+                # Standard weights
+                composite_score = (
+                    0.35 * model_score +
+                    0.25 * water_score +
+                    0.15 * soil_score +
+                    0.15 * weather_score +
+                    0.10 * pref_score
+                )
             if soil_type in ["Unknown", "Other", None, ""]:
                 # Reallocate soil 15% weight to model (5%) and water (10%)
                 composite_score = (
