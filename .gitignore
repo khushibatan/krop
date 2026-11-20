@@ -1,0 +1,46 @@
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environment and secrets
+.env
+.env.local
+kaggle.json
+*.key
+*.pem
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Streamlit run files
+.streamlit/secrets.toml
+
+# SQLite Database (persist local data, don't commit personal db entries)
+database/*.db
+database/*.db-journal
+!database/.gitkeep
+
+# Models and evaluation
+models/*.joblib
+!models/.gitkeep
+!models/evaluation/.gitkeep
+
+# Raw archive files
+data/raw/*.zip
+data/raw/*.tar.gz
+data/raw/*.rar
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
