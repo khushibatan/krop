@@ -1,6 +1,6 @@
 # KROP Machine Learning Model Evaluation Report
 
-**Generated At**: 2026-11-20T17:29:08.401833  
+**Generated At**: 2026-11-20T18:26:02.412205  
 **Model Architecture**: Random Forest Pipeline (ColumnTransformer + Balanced Random Forest Classifier)  
 **Total Training Records**: 165,101  
 **Total Test Records**: 41,276  
@@ -12,13 +12,13 @@
 
 | Metric | Score | Percentage | Agronomic Context |
 |---|---|---|---|
-| **Top-1 Accuracy** | `0.4373` | **43.73%** | Exact match on single highest-ranked crop |
-| **Top-3 Recommendation Accuracy** | `0.7341` | **73.41%** | True historical crop falls in top 3 recommended candidates |
-| **Top-5 Recommendation Accuracy** | `0.8514` | **85.14%** | True historical crop falls in top 5 recommended candidates |
-| **Weighted Precision** | `0.4626` | **46.26%** | Precision weighted across crop cultivation frequencies |
-| **Weighted Recall** | `0.4373` | **43.73%** | Sensitivity across all target crop classes |
-| **Weighted F1-Score** | `0.4415` | **44.15%** | Harmonic balance between precision and recall |
-| **Macro F1-Score** | `0.418` | **41.80%** | Unweighted mean across major and minor crops |
+| **Top-1 Accuracy** | `0.4255` | **42.55%** | Exact match on single highest-ranked crop |
+| **Top-3 Recommendation Accuracy** | `0.7208` | **72.08%** | True historical crop falls in top 3 recommended candidates |
+| **Top-5 Recommendation Accuracy** | `0.8428` | **84.28%** | True historical crop falls in top 5 recommended candidates |
+| **Weighted Precision** | `0.468` | **46.80%** | Precision weighted across crop cultivation frequencies |
+| **Weighted Recall** | `0.4255` | **42.55%** | Sensitivity across all target crop classes |
+| **Weighted F1-Score** | `0.4287` | **42.87%** | Harmonic balance between precision and recall |
+| **Macro F1-Score** | `0.4082` | **40.82%** | Unweighted mean across major and minor crops |
 
 ---
 
@@ -39,26 +39,26 @@ The model is strictly trained on verifiable geographical, environmental, and far
 
 | Crop | Precision | Recall | F1-Score | Support |
 |---|---|---|---|---|
-| Arhar/Tur | 0.419 | 0.423 | 0.421 | 1516.0 |
-| Bajra | 0.408 | 0.479 | 0.441 | 1085.0 |
-| Banana | 0.420 | 0.603 | 0.495 | 642.0 |
-| Barley | 0.466 | 0.608 | 0.528 | 840.0 |
-| Castor seed | 0.246 | 0.456 | 0.320 | 675.0 |
-| Coriander | 0.321 | 0.420 | 0.364 | 674.0 |
-| Cotton(lint) | 0.347 | 0.445 | 0.390 | 904.0 |
-| Dry chillies | 0.362 | 0.351 | 0.356 | 1298.0 |
-| Dry ginger | 0.277 | 0.450 | 0.343 | 602.0 |
-| Garlic | 0.315 | 0.456 | 0.373 | 658.0 |
-| Gram | 0.521 | 0.433 | 0.473 | 1472.0 |
-| Groundnut | 0.417 | 0.333 | 0.370 | 1767.0 |
-| Horse-gram | 0.203 | 0.364 | 0.261 | 780.0 |
-| Jowar | 0.365 | 0.338 | 0.351 | 1413.0 |
-| Linseed | 0.397 | 0.494 | 0.440 | 881.0 |
-| Maize | 0.631 | 0.376 | 0.471 | 2790.0 |
-| Masoor | 0.422 | 0.575 | 0.487 | 845.0 |
-| Moong(Green Gram) | 0.418 | 0.269 | 0.327 | 2064.0 |
-| Onion | 0.415 | 0.353 | 0.382 | 1402.0 |
-| Peas & beans (Pulses) | 0.354 | 0.445 | 0.395 | 905.0 |
+| Arhar/Tur | 0.404 | 0.427 | 0.415 | 1516.0 |
+| Bajra | 0.400 | 0.495 | 0.443 | 1085.0 |
+| Banana | 0.380 | 0.640 | 0.477 | 642.0 |
+| Barley | 0.424 | 0.674 | 0.520 | 840.0 |
+| Castor seed | 0.233 | 0.527 | 0.323 | 675.0 |
+| Coriander | 0.294 | 0.476 | 0.364 | 674.0 |
+| Cotton(lint) | 0.336 | 0.476 | 0.394 | 904.0 |
+| Dry chillies | 0.362 | 0.298 | 0.327 | 1298.0 |
+| Dry ginger | 0.275 | 0.478 | 0.349 | 602.0 |
+| Garlic | 0.305 | 0.485 | 0.374 | 658.0 |
+| Gram | 0.531 | 0.392 | 0.451 | 1472.0 |
+| Groundnut | 0.431 | 0.310 | 0.361 | 1767.0 |
+| Horse-gram | 0.197 | 0.429 | 0.270 | 780.0 |
+| Jowar | 0.369 | 0.340 | 0.354 | 1413.0 |
+| Linseed | 0.379 | 0.515 | 0.437 | 881.0 |
+| Maize | 0.682 | 0.327 | 0.442 | 2790.0 |
+| Masoor | 0.385 | 0.606 | 0.471 | 845.0 |
+| Moong(Green Gram) | 0.442 | 0.221 | 0.295 | 2064.0 |
+| Onion | 0.411 | 0.306 | 0.351 | 1402.0 |
+| Peas & beans (Pulses) | 0.333 | 0.462 | 0.387 | 905.0 |
 
 ---
 

@@ -205,9 +205,9 @@ def init_session_state():
         st.session_state["weather_cache"] = None
 
 
-def get_plotly_theme():
+def get_plotly_theme(**overrides):
     """Returns consistent Plotly layout settings matching KROP visual identity."""
-    return dict(
+    theme = dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color="#1b4332", family="'Segoe UI', sans-serif"),
@@ -215,3 +215,9 @@ def get_plotly_theme():
         xaxis=dict(gridcolor="#e5e7eb", zerolinecolor="#e5e7eb"),
         yaxis=dict(gridcolor="#e5e7eb", zerolinecolor="#e5e7eb")
     )
+    for k, v in overrides.items():
+        if k in ("xaxis", "yaxis") and isinstance(v, dict):
+            theme[k] = {**theme[k], **v}
+        else:
+            theme[k] = v
+    return theme

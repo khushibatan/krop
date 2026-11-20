@@ -13,7 +13,7 @@ from src.ui_components import (
     init_session_state
 )
 from src.utils import get_indian_states, get_districts_for_state
-from src.geolocation_service import GeolocationService
+from src.geolocation_service import GeolocationService, get_approximate_coordinates
 from src.validation import (
     validate_farm_profile,
     VALID_SEASONS,
@@ -105,7 +105,7 @@ col_geo_search, col_geo_res = st.columns([1.5, 2.5])
 
 with col_geo_search:
     search_q = village_input.strip() if village_input.strip() else selected_district
-    if st.button("🔍 Resolve Coordinates via Open-Meteo", use_container_width=True):
+    if st.button("🔍 Resolve Coordinates via Open-Meteo", width="stretch"):
         geo_svc = GeolocationService()
         with st.spinner("Searching Indian geospatial database..."):
             results = geo_svc.search_locations(search_q, state_hint=selected_state)
@@ -114,20 +114,37 @@ with col_geo_search:
                 st.warning(f"Could not pinpoint '{search_q}'. Default regional centroid will be utilized.")
 
 geo_candidates = st.session_state.get("geo_results", [])
-selected_lat = active_profile.get("latitude", 18.5204) if active_profile else 18.5204
-selected_lon = active_profile.get("longitude", 73.8567) if active_profile else 73.8567
 
-with col_geo_res:
-    if geo_candidates:
-        options = [c["display_label"] for c in geo_candidates]
+# Determine coordinates based on confirmed search or regional centroid
+is_approximate = True
+if geo_candidates:
+    options = [c["display_label"] for c in geo_candidates]
+    with col_geo_res:
         chosen_label = st.selectbox("Select Confirmed Location Match:", options)
-        # Find chosen record
         chosen_rec = next((c for c in geo_candidates if c["display_label"] == chosen_label), geo_candidates[0])
         selected_lat = chosen_rec["latitude"]
         selected_lon = chosen_rec["longitude"]
-        st.success(f"Selected: **{chosen_rec['name']}** (Lat: {selected_lat:.4f}°, Lon: {selected_lon:.4f}°)")
-    else:
-        st.info(f"Current Coordinates: **{selected_lat:.4f}°N, {selected_lon:.4f}°E** (Auto-set for {selected_district}, {selected_state})")
+        is_approximate = chosen_rec.get("is_fallback", False)
+        if not is_approximate:
+            st.success(f"✅ Exact Coordinates Confirmed: **{chosen_rec['name']}** ({selected_lat:.4f}°N, {selected_lon:.4f}°E)")
+        else:
+            st.warning(f"⚠️ Approximate Centroid: **{chosen_rec['name']}** ({selected_lat:.4f}°N, {selected_lon:.4f}°E)")
+elif active_profile and active_profile.get("state") == selected_state and active_profile.get("district") == selected_district and active_profile.get("latitude"):
+    selected_lat = float(active_profile["latitude"])
+    selected_lon = float(active_profile["longitude"])
+    is_approximate = False
+    with col_geo_res:
+        st.info(f"📍 Saved Farm Coordinates: **{selected_lat:.4f}°N, {selected_lon:.4f}°E** ({selected_district}, {selected_state})")
+else:
+    approx = get_approximate_coordinates(selected_state, selected_district)
+    selected_lat = approx["latitude"]
+    selected_lon = approx["longitude"]
+    is_approximate = True
+    with col_geo_res:
+        st.warning(
+            f"⚠️ **Approximate Centroid Active**: Using regional coordinates (**{selected_lat:.4f}°N, {selected_lon:.4f}°E**) for {selected_district}, {selected_state}. "
+            "Click **'Resolve Coordinates via Open-Meteo'** for exact village precision."
+        )
 
 st.divider()
 
@@ -227,7 +244,7 @@ profile_data = {
 }
 
 with col_btn1:
-    if st.button("💾 Save Profile", type="primary", use_container_width=True):
+    if st.button("💾 Save Profile", type="primary", width="stretch"):
         is_valid, errors = validate_farm_profile(profile_data)
         if not is_valid:
             for err in errors:
@@ -246,12 +263,12 @@ with col_btn1:
             st.rerun()
 
 with col_btn2:
-    if st.button("🌱 Proceed to Recommendations", use_container_width=True):
+    if st.button("🌱 Proceed to Recommendations", width="stretch"):
         st.session_state["active_farm_profile"] = profile_data
         st.switch_page("pages/3_Crop_Recommendations.py")
 
 with col_btn3:
-    if active_profile and st.button("➕ Create New / Reset Profile", use_container_width=True):
+    if active_profile and st.button("➕ Create New / Reset Profile", width="stretch"):
         st.session_state["active_farm_profile"] = None
         st.session_state["geo_results"] = []
         st.info("Reset to blank profile form.")

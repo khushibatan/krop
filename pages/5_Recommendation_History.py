@@ -79,10 +79,10 @@ if comparison_data:
     fig_comp.update_layout(
         height=280,
         margin=dict(l=20, r=20, t=35, b=20),
-        xaxis=dict(tickangle=-15),
         **get_plotly_theme()
     )
-    st.plotly_chart(fig_comp, use_container_width=True)
+    fig_comp.update_xaxes(tickangle=-15)
+    st.plotly_chart(fig_comp, width="stretch")
 
 st.divider()
 

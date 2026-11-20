@@ -32,6 +32,7 @@ database/*.db-journal
 
 # Models and evaluation
 models/*.joblib
+!models/krop_crop_model.joblib
 !models/.gitkeep
 !models/evaluation/.gitkeep
 

@@ -113,7 +113,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # Generate Recommendation Trigger
 col_btn, col_count = st.columns([1.5, 3.5])
 with col_btn:
-    generate_clicked = st.button("🌱 Generate Recommendations", type="primary", use_container_width=True)
+    generate_clicked = st.button("🌱 Generate Recommendations", type="primary", width="stretch")
 
 # Engine Execution
 rec_result = st.session_state.get("latest_recommendation")
@@ -167,10 +167,10 @@ fig_scores = px.bar(
 fig_scores.update_layout(
     height=260,
     margin=dict(l=20, r=20, t=35, b=20),
-    yaxis=dict(autorange="reversed"),
     **get_plotly_theme()
 )
-st.plotly_chart(fig_scores, use_container_width=True)
+fig_scores.update_yaxes(autorange="reversed")
+st.plotly_chart(fig_scores, width="stretch")
 
 st.divider()
 
@@ -247,7 +247,7 @@ st.divider()
 col_save1, col_save2 = st.columns([2, 3])
 
 with col_save1:
-    if st.button("💾 Save Recommendation Record to History", type="primary", use_container_width=True):
+    if st.button("💾 Save Recommendation Record to History", type="primary", width="stretch"):
         saved_id = db.save_recommendation(
             farm_profile_id=active_profile.get("id"),
             recommended_crops=recommendations,
@@ -258,5 +258,5 @@ with col_save1:
         st.success(f"✅ Advisory record saved permanently to SQLite database as Record #{saved_id}!")
 
 with col_save2:
-    if st.button("📜 View Recommendation History", use_container_width=True):
+    if st.button("📜 View Recommendation History", width="stretch"):
         st.switch_page("pages/5_Recommendation_History.py")

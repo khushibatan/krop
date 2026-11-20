@@ -29,10 +29,16 @@ def load_model(model_path: Path = MODEL_PATH):
         return _CACHED_PIPELINE
 
     if not model_path.exists():
-        raise FileNotFoundError(
-            f"Trained model artifact not found at '{model_path}'. "
-            "Please train the model first by executing: `python -m src.train_model`."
-        )
+        logger.warning("Model file not found at '%s'. Triggering automatic training...", model_path)
+        try:
+            from src.train_model import ModelTrainer
+            trainer = ModelTrainer()
+            trainer.train_and_evaluate()
+        except Exception as e:
+            raise FileNotFoundError(
+                f"Trained model artifact not found at '{model_path}' and automatic training failed: {e}. "
+                "Please train the model manually by executing: `python -m src.train_model`."
+            )
 
     try:
         _CACHED_PIPELINE = joblib.load(model_path)

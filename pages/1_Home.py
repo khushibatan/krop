@@ -100,7 +100,7 @@ with col_left:
             """,
             unsafe_allow_html=True
         )
-        if st.button("Set Up Farm Profile &rarr;", key="home_btn_farm_profile", use_container_width=True):
+        if st.button("Set Up Farm Profile &rarr;", key="home_btn_farm_profile", width="stretch"):
             st.switch_page("pages/2_Farm_Profile.py")
 
     with c_act2:
@@ -115,7 +115,7 @@ with col_left:
             """,
             unsafe_allow_html=True
         )
-        if st.button("Generate Recommendations &rarr;", key="home_btn_recommendations", use_container_width=True):
+        if st.button("Generate Recommendations &rarr;", key="home_btn_recommendations", width="stretch"):
             st.switch_page("pages/3_Crop_Recommendations.py")
 
     c_act3, c_act4 = st.columns(2)
@@ -131,7 +131,7 @@ with col_left:
             """,
             unsafe_allow_html=True
         )
-        if st.button("Browse Crop Catalog &rarr;", key="home_btn_insights", use_container_width=True):
+        if st.button("Browse Crop Catalog &rarr;", key="home_btn_insights", width="stretch"):
             st.switch_page("pages/4_Crop_Insights.py")
 
     with c_act4:
@@ -146,7 +146,7 @@ with col_left:
             """,
             unsafe_allow_html=True
         )
-        if st.button("View History &rarr;", key="home_btn_history", use_container_width=True):
+        if st.button("View History &rarr;", key="home_btn_history", width="stretch"):
             st.switch_page("pages/5_Recommendation_History.py")
 
 with col_right:
@@ -211,7 +211,7 @@ with col_right:
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                 **get_plotly_theme()
             )
-            st.plotly_chart(fig_w, use_container_width=True)
+            st.plotly_chart(fig_w, width="stretch")
 
     else:
         st.markdown(
@@ -226,7 +226,7 @@ with col_right:
             """,
             unsafe_allow_html=True
         )
-        if st.button("Configure Farm Location", key="home_btn_goto_profile", use_container_width=True):
+        if st.button("Configure Farm Location", key="home_btn_goto_profile", width="stretch"):
             st.switch_page("pages/2_Farm_Profile.py")
 
 st.divider()
@@ -280,4 +280,4 @@ with col_chart:
         showlegend=False,
         **get_plotly_theme()
     )
-    st.plotly_chart(fig_cat, use_container_width=True)
+    st.plotly_chart(fig_cat, width="stretch")

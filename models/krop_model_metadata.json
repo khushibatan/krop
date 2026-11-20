@@ -1,7 +1,7 @@
 {
   "model_name": "KROP Multi-Class Crop Suitability Classifier",
   "model_version": "1.0.0",
-  "trained_at": "2026-11-20T17:29:08.401833",
+  "trained_at": "2026-11-20T18:26:02.412205",
   "classes": [
     "Arhar/Tur",
     "Bajra",
@@ -47,14 +47,14 @@
     "rainfall_ratio"
   ],
   "metrics": {
-    "top_1_accuracy": 0.4373,
-    "top_3_accuracy": 0.7341,
-    "top_5_accuracy": 0.8514,
-    "weighted_precision": 0.4626,
-    "weighted_recall": 0.4373,
-    "weighted_f1_score": 0.4415,
-    "macro_precision": 0.4147,
-    "macro_recall": 0.4385,
-    "macro_f1_score": 0.418
+    "top_1_accuracy": 0.4255,
+    "top_3_accuracy": 0.7208,
+    "top_5_accuracy": 0.8428,
+    "weighted_precision": 0.468,
+    "weighted_recall": 0.4255,
+    "weighted_f1_score": 0.4287,
+    "macro_precision": 0.4124,
+    "macro_recall": 0.4401,
+    "macro_f1_score": 0.4082
   }
 }

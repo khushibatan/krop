@@ -4,7 +4,7 @@ Validates farm profile parameters, coordinates, and agronomic inputs.
 Zero hardware dependencies, strictly zero NPK.
 """
 
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 
 VALID_SEASONS = ["Kharif", "Rabi", "Summer", "Whole Year", "Not sure"]
 VALID_LAND_UNITS = ["Acres", "Hectares", "Bighas", "Gunthas"]

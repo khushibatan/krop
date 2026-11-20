@@ -110,7 +110,7 @@ with col_chart1:
         margin=dict(l=20, r=20, t=20, b=20),
         **get_plotly_theme()
     )
-    st.plotly_chart(fig_dur, use_container_width=True)
+    st.plotly_chart(fig_dur, width="stretch")
 
 with col_chart2:
     st.markdown("#### 💧 Water Requirement Breakdown")
@@ -134,7 +134,7 @@ with col_chart2:
         margin=dict(l=20, r=20, t=20, b=20),
         **get_plotly_theme()
     )
-    st.plotly_chart(fig_water, use_container_width=True)
+    st.plotly_chart(fig_water, width="stretch")
 
 st.divider()
 

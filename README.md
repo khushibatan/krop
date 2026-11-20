@@ -50,7 +50,7 @@ Existing digital tools often suffer from:
 - **Open-Meteo Geocoding**: Automatic geographical coordinate resolution across Indian villages, towns, and districts.
 - **Live Weather Dashboard**: Real-time ambient telemetry and 7-day precipitation forecasts to guide immediate sowing windows.
 - **Multi-Factor Recommendation Engine**:
-  - Stage 1: Random Forest probabilistic candidate generation (Top-5 Accuracy > 85%).
+  - Stage 1: Random Forest probabilistic candidate generation (Top-5 Accuracy > 84%).
   - Stage 2: Water balance verification against farm irrigation and seasonal rainfall normals.
   - Stage 3: Soil type compatibility matching (handles "Unknown" soil without penalty).
   - Stage 4: Live temperature growth-window evaluation.
@@ -241,10 +241,10 @@ Evaluated on 41,276 unseen test records from the 206k survey dataset:
 
 | Metric | Score | Agronomic Interpretation |
 |---|---|---|
-| **Top-1 Exact Match** | **43.73%** | Exact match on a single highest-predicted crop out of 33 options (random baseline is 3.03%). |
-| **Top-3 Recommendation Accuracy** | **73.41%** | A regionally viable historical crop is present in the top 3 recommendations. |
-| **Top-5 Recommendation Accuracy** | **85.14%** | Over 85% probability that the candidate list contains a historically proven regional crop. |
-| **Weighted F1 Score** | **44.15%** | Harmonic mean of precision and recall weighted by crop cultivation frequencies. |
+| **Top-1 Exact Match** | **42.55%** | Exact match on a single highest-predicted crop out of 33 options (random baseline is 3.03%). |
+| **Top-3 Recommendation Accuracy** | **72.08%** | A regionally viable historical crop is present in the top 3 recommendations. |
+| **Top-5 Recommendation Accuracy** | **84.28%** | Over 84% probability that the candidate list contains a historically proven regional crop. |
+| **Weighted F1 Score** | **42.87%** | Harmonic mean of precision and recall weighted by crop cultivation frequencies. |
 
 *Detailed per-crop precision, recall, and support statistics are saved in `models/evaluation/model_evaluation_report.md`.*
 

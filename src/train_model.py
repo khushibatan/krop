@@ -94,10 +94,10 @@ class ModelTrainer:
         )
 
         model = RandomForestClassifier(
-            n_estimators=150,
-            max_depth=25,
-            min_samples_split=5,
-            min_samples_leaf=2,
+            n_estimators=60,
+            max_depth=20,
+            min_samples_split=6,
+            min_samples_leaf=3,
             random_state=42,
             n_jobs=-1,
             class_weight="balanced_subsample",
@@ -168,7 +168,7 @@ class ModelTrainer:
 
         # Save model artifact
         logger.info("Saving trained pipeline to %s ...", MODEL_PATH)
-        joblib.dump(pipeline, MODEL_PATH, compress=3)
+        joblib.dump(pipeline, MODEL_PATH, compress=6)
 
         # Save metadata
         metadata = {
