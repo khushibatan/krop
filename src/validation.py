@@ -4,7 +4,8 @@ Validates farm profile parameters, coordinates, and agronomic inputs.
 Zero hardware dependencies, strictly zero NPK.
 """
 
-from typing import Dict, List, Tuple, Any, Optional
+import math
+from typing import Any, Dict, List, Optional, Tuple
 
 VALID_SEASONS = ["Kharif", "Rabi", "Summer", "Whole Year", "Not sure"]
 VALID_LAND_UNITS = ["Acres", "Hectares", "Bighas", "Gunthas"]
@@ -45,7 +46,9 @@ def validate_farm_profile(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     land_area = data.get("land_area")
     try:
         area_val = float(land_area)
-        if area_val <= 0:
+        if not math.isfinite(area_val):
+            errors.append("Land area must be a valid positive numerical value.")
+        elif area_val <= 0:
             errors.append("Land area must be greater than zero.")
         elif area_val > 50000:
             errors.append("Land area exceeds plausible single-farm scale (> 50,000 units).")
@@ -82,6 +85,13 @@ def validate_farm_profile(data: Dict[str, Any]) -> Tuple[bool, List[str]]:
     if pref and pref not in VALID_CROP_PREFERENCES:
         errors.append(f"Invalid crop preference selection '{pref}'.")
 
+    # 10. Coordinates (optional, validated only when supplied)
+    lat, lon = data.get("latitude"), data.get("longitude")
+    if lat is not None or lon is not None:
+        coords_ok, coords_error = validate_coordinates(lat, lon)
+        if not coords_ok:
+            errors.append(coords_error)
+
     return len(errors) == 0, errors
 
 
@@ -90,6 +100,8 @@ def validate_coordinates(lat: Any, lon: Any) -> Tuple[bool, Optional[str]]:
     try:
         lat_f = float(lat)
         lon_f = float(lon)
+        if not (math.isfinite(lat_f) and math.isfinite(lon_f)):
+            return False, "Coordinates must be valid numerical values."
         # Bounding box for India: Lat 6°N - 38°N, Lon 68°E - 98°E
         if not (6.0 <= lat_f <= 38.0):
             return False, f"Latitude {lat_f:.4f}° is outside Indian geographical limits (6°N to 38°N)."

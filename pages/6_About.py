@@ -1,29 +1,13 @@
 """
-KROP - Page 6: About KROP
+KROP - About
 Comprehensive project documentation, technology stack, ML methodology, and agricultural disclaimers.
-Strictly zero hardware dependencies, absolutely ZERO NPK.
 """
 
-import streamlit as st
 import json
-from pathlib import Path
 
-from src.ui_components import (
-    apply_custom_styles,
-    render_sidebar_header,
-    init_session_state
-)
+import streamlit as st
 
-st.set_page_config(
-    page_title="About KROP - Smart Crop Planning System",
-    page_icon="🌾",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-apply_custom_styles()
-init_session_state()
-render_sidebar_header()
+from src.config import EVAL_REPORT_JSON
 
 st.title("🌾 About KROP")
 st.subheader("Smart Crop Planning and Recommendation System")
@@ -78,10 +62,10 @@ with tab2:
         """
         | Component | Technology | Role in KROP |
         |---|---|---|
-        | **Language** | Python 3.13 | Core programming and computational runtime |
+        | **Language** | Python 3.13+ | Core programming and computational runtime |
         | **Frontend UI** | Streamlit | Modern, accessible, interactive AgriTech web interface |
         | **Machine Learning** | Scikit-learn (RandomForest) | Multi-class probabilistic crop suitability candidate generation |
-        | **Data Processing** | Pandas, NumPy | Cleaning, standardizing, joining, and engineering features across 240k+ records |
+        | **Data Processing** | Pandas, NumPy | Cleaning, standardizing, joining, and engineering features across 200k+ records |
         | **Model Serialization** | Joblib | High-efficiency compression and deserialization of ML pipelines |
         | **Database** | SQLite 3 | Relational, ACID-compliant persistence for farm profiles and advisories |
         | **Weather Integration** | Open-Meteo API | Free, unauthenticated live weather telemetry and 7-day forecasts |
@@ -95,17 +79,18 @@ with tab3:
     st.markdown("### 🧠 Machine Learning Engine Architecture")
     
     # Read model evaluation metadata if available
-    eval_json_path = Path("models/evaluation/model_evaluation_report.json")
-    if eval_json_path.exists():
-        with open(eval_json_path, "r") as f:
-            eval_data = json.load(f)
-        m = eval_data.get("metrics", {})
-        
-        c_m1, c_m2, c_m3, c_m4 = st.columns(4)
-        c_m1.metric("Top-1 Exact Match", f"{m.get('top_1_accuracy', 0)*100:.2f}%", "Single Highest Crop")
-        c_m2.metric("Top-3 Recommendation", f"{m.get('top_3_accuracy', 0)*100:.2f}%", "In Top 3 Candidates")
-        c_m3.metric("Top-5 Recommendation", f"{m.get('top_5_accuracy', 0)*100:.2f}%", "In Top 5 Candidates")
-        c_m4.metric("Weighted F1 Score", f"{m.get('weighted_f1_score', 0)*100:.2f}%", "Balanced Evaluation")
+    if EVAL_REPORT_JSON.exists():
+        m = json.loads(EVAL_REPORT_JSON.read_text(encoding="utf-8")).get("metrics", {})
+
+        c_m1, c_m2, c_m3 = st.columns(3)
+        c_m1.metric("Top-1 (area-weighted)", f"{m.get('top_1_area_weighted_accuracy', 0)*100:.1f}%", "Single top pick", delta_color="off")
+        c_m2.metric("Top-3 (area-weighted)", f"{m.get('top_3_area_weighted_accuracy', 0)*100:.1f}%", "In top 3 candidates", delta_color="off")
+        c_m3.metric("Top-5 (area-weighted)", f"{m.get('top_5_area_weighted_accuracy', 0)*100:.1f}%", "In top 5 candidates", delta_color="off")
+        st.caption(
+            "Area-weighted: the share of historically cultivated area whose crop appears among the model's top picks. "
+            f"Per-record Top-5 accuracy is {m.get('top_5_accuracy', 0)*100:.1f}% because minor crops with tiny records "
+            "count equally there. The model is a candidate generator; final ranking applies agronomic validation."
+        )
 
     st.markdown(
         """
@@ -113,11 +98,13 @@ with tab3:
         The model is strictly trained on verifiable environmental and operational parameters:
         - `State_Name` (Categorical, OneHotEncoded)
         - `Season` (Categorical: Kharif, Rabi, Summer, Whole Year)
-        - `area_hectares` (Numerical, StandardScaled)
-        - `area_category` (Categorical: Marginal <1ha, Small 1-2ha, Semi-Medium 2-4ha, Medium 4-10ha, Large >10ha)
         - `annual_rainfall_mm` (Numerical, IMD normal annual precipitation)
         - `seasonal_rainfall_mm` (Numerical, IMD normal seasonal precipitation)
         - `rainfall_ratio` (Numerical, Seasonal / Annual fraction)
+
+        Historical `Area` figures are district totals, not farm sizes, so they weight training samples
+        (square root of cultivated area) instead of acting as a feature. Your farm size is recorded in your
+        profile but does not change the ML candidates.
 
         #### 2. Hybrid Recommendation Scoring
         Unlike naive black-box models, KROP uses a hybrid architecture:
@@ -125,6 +112,7 @@ with tab3:
         - **Stage 2 (Agronomic Validation)**: Evaluates soil compatibility (ICAR guidelines), water requirements vs farm irrigation, and live weather conditions.
         - **Stage 3 (Transparent Composite Ranking)**:
           $$\\text{Score} = 0.35 \\times \\text{Model} + 0.25 \\times \\text{Water} + 0.15 \\times \\text{Soil} + 0.15 \\times \\text{Weather} + 0.10 \\times \\text{Preference}$$
+          When soil type is unknown, its 15% moves to the model (+5%) and water balance (+10%).
         """
     )
 

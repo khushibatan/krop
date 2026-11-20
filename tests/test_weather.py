@@ -102,3 +102,25 @@ def test_geolocation_offline_state_centroid_fallback(mock_get):
     assert len(locations) == 1
     assert "Punjab" in locations[0]["state"]
     assert locations[0]["is_fallback"] is True
+
+
+@patch("src.geolocation_service.requests.get")
+def test_geolocation_prioritises_hinted_state(mock_get):
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"results": [
+        {"name": "Aurangabad", "admin1": "Bihar", "country_code": "IN", "latitude": 24.75, "longitude": 84.37},
+        {"name": "Aurangabad", "admin1": "Maharashtra", "country_code": "IN", "latitude": 19.88, "longitude": 75.34},
+        {"name": "Aurangabad", "admin1": "Elsewhere", "country_code": "PK", "latitude": 30.0, "longitude": 70.0},
+    ]}
+    mock_get.return_value = mock_resp
+    results = GeolocationService().search_locations("Aurangabad-test", state_hint="Maharashtra")
+    assert [r["state"] for r in results] == ["Maharashtra", "Bihar"]
+
+
+@patch("src.weather_service.requests.get")
+def test_weather_http_error_falls_back(mock_get):
+    import requests
+    resp = MagicMock()
+    resp.raise_for_status.side_effect = requests.HTTPError("503")
+    mock_get.return_value = resp
+    assert WeatherService().get_weather_forecast(11.11, 77.77)["status"] == "fallback"

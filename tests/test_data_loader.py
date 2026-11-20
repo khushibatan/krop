@@ -5,13 +5,14 @@ Unit tests for KROP Data Loader Module.
 import pytest
 from pathlib import Path
 import pandas as pd
+from src.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
 from src.data_loader import DataLoader
 
 
 def test_data_loader_initialization():
     loader = DataLoader()
-    assert loader.raw_dir == Path("data/raw")
-    assert loader.processed_dir == Path("data/processed")
+    assert loader.raw_dir == RAW_DATA_DIR
+    assert loader.processed_dir == PROCESSED_DATA_DIR
 
 
 def test_raw_data_presence():

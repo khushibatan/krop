@@ -4,21 +4,19 @@ Loads raw and processed agricultural and rainfall datasets.
 Adheres strictly to the software-only, zero-hardware, and ZERO-NPK specification.
 """
 
-import os
 import logging
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 import pandas as pd
+
+from src.config import CLEAN_DATASET_PATH, PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 logger = logging.getLogger("krop.data_loader")
 
-RAW_DATA_DIR = Path("data/raw")
-PROCESSED_DATA_DIR = Path("data/processed")
-
-CROP_PRODUCTION_RAW = RAW_DATA_DIR / "crop_production.csv"
-DISTRICT_RAINFALL_RAW = RAW_DATA_DIR / "district wise rainfall normal.csv"
-HISTORICAL_RAINFALL_RAW = RAW_DATA_DIR / "rainfall in india 1901-2015.csv"
-PROCESSED_DATASET = PROCESSED_DATA_DIR / "clean_crop_rainfall.csv"
+CROP_PRODUCTION_FILE = "crop_production.csv"
+DISTRICT_RAINFALL_FILE = "district wise rainfall normal.csv"
+HISTORICAL_RAINFALL_FILE = "rainfall in india 1901-2015.csv"
+PROCESSED_DATASET = CLEAN_DATASET_PATH
 
 
 class DataLoader:
@@ -31,19 +29,19 @@ class DataLoader:
     def check_raw_data_exists(self) -> Dict[str, bool]:
         """Check if all required raw datasets are present in data/raw/."""
         status = {
-            "crop_production": (self.raw_dir / "crop_production.csv").exists(),
-            "district_rainfall": (self.raw_dir / "district wise rainfall normal.csv").exists(),
-            "historical_rainfall": (self.raw_dir / "rainfall in india 1901-2015.csv").exists(),
+            "crop_production": (self.raw_dir / CROP_PRODUCTION_FILE).exists(),
+            "district_rainfall": (self.raw_dir / DISTRICT_RAINFALL_FILE).exists(),
+            "historical_rainfall": (self.raw_dir / HISTORICAL_RAINFALL_FILE).exists(),
         }
         return status
 
     def load_crop_production(self) -> pd.DataFrame:
         """Load the raw crop production dataset."""
-        file_path = self.raw_dir / "crop_production.csv"
+        file_path = self.raw_dir / CROP_PRODUCTION_FILE
         if not file_path.exists():
             raise FileNotFoundError(
                 f"Crop production dataset not found at {file_path}. "
-                "Run `python src/acquire_data.py` to acquire raw data."
+                "Run `python -m src.acquire_data` to acquire raw data."
             )
         df = pd.read_csv(file_path, low_memory=False)
         logger.info("Loaded crop production data: %d rows, %d cols", len(df), len(df.columns))
@@ -51,11 +49,11 @@ class DataLoader:
 
     def load_district_rainfall(self) -> pd.DataFrame:
         """Load the district-level normal rainfall dataset."""
-        file_path = self.raw_dir / "district wise rainfall normal.csv"
+        file_path = self.raw_dir / DISTRICT_RAINFALL_FILE
         if not file_path.exists():
             raise FileNotFoundError(
                 f"District rainfall dataset not found at {file_path}. "
-                "Run `python src/acquire_data.py` to acquire raw data."
+                "Run `python -m src.acquire_data` to acquire raw data."
             )
         df = pd.read_csv(file_path)
         logger.info("Loaded district rainfall data: %d rows, %d cols", len(df), len(df.columns))
@@ -63,11 +61,11 @@ class DataLoader:
 
     def load_historical_rainfall(self) -> pd.DataFrame:
         """Load the subdivision-level historical rainfall dataset (1901-2015)."""
-        file_path = self.raw_dir / "rainfall in india 1901-2015.csv"
+        file_path = self.raw_dir / HISTORICAL_RAINFALL_FILE
         if not file_path.exists():
             raise FileNotFoundError(
                 f"Historical rainfall dataset not found at {file_path}. "
-                "Run `python src/acquire_data.py` to acquire raw data."
+                "Run `python -m src.acquire_data` to acquire raw data."
             )
         df = pd.read_csv(file_path)
         logger.info("Loaded historical rainfall data: %d rows, %d cols", len(df), len(df.columns))
@@ -75,8 +73,9 @@ class DataLoader:
 
     def load_processed_data(self) -> Optional[pd.DataFrame]:
         """Load the preprocessed joined dataset if available."""
-        if PROCESSED_DATASET.exists():
-            return pd.read_csv(PROCESSED_DATASET, low_memory=False)
+        dataset_path = self.processed_dir / PROCESSED_DATASET.name
+        if dataset_path.exists():
+            return pd.read_csv(dataset_path, low_memory=False)
         return None
 
 

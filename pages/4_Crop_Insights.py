@@ -1,36 +1,17 @@
 """
-KROP - Page 4: Crop Insights and Agronomic Catalog
+KROP - Crop Insights and Agronomic Catalog
 Searchable agronomic reference database curated from ICAR and Agricultural Universities.
-Strictly zero hardware dependencies, absolutely ZERO NPK.
 """
 
 import streamlit as st
 import plotly.express as px
-import plotly.graph_objects as go
-import pandas as pd
 
-from src.ui_components import (
-    apply_custom_styles,
-    render_sidebar_header,
-    init_session_state,
-    get_plotly_theme
-)
+from src.ui_components import esc, get_plotly_theme
 from src.crop_information import (
-    load_crop_catalog,
+    filter_crops,
     get_crop_categories,
-    filter_crops
+    load_crop_catalog,
 )
-
-st.set_page_config(
-    page_title="Crop Insights - KROP",
-    page_icon="🌾",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-apply_custom_styles()
-init_session_state()
-render_sidebar_header()
 
 st.title("📖 Crop Agronomic Insights & Knowledge Base")
 st.write(
@@ -71,8 +52,8 @@ filtered_df = filter_crops(
 
 if search_term:
     filtered_df = filtered_df[
-        filtered_df["crop_name"].str.lower().str.contains(search_term) |
-        filtered_df["cultivation_notes"].str.lower().str.contains(search_term)
+        filtered_df["crop_name"].str.lower().str.contains(search_term, regex=False) |
+        filtered_df["cultivation_notes"].str.lower().str.contains(search_term, regex=False)
     ]
 
 # Summary Strip
@@ -80,7 +61,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 c_k1, c_k2, c_k3, c_k4 = st.columns(4)
 c_k1.metric("Matching Crops", len(filtered_df), f"of {len(catalog_df)} total")
 avg_dur = int(filtered_df["duration_max_days"].mean()) if not filtered_df.empty else 0
-c_k2.metric("Average Maturity Duration", f"{avg_dur} days" if avg_dur else "N/A")
+c_k2.metric("Average Maturity (max days)", f"{avg_dur} days" if avg_dur else "N/A")
 low_water_cnt = (filtered_df["water_requirement"] == "Low").sum() if not filtered_df.empty else 0
 c_k3.metric("Drought-Resilient Crops", low_water_cnt, "Low Water Demand")
 c_k4.metric("Categories Represented", filtered_df["crop_category"].nunique() if not filtered_df.empty else 0)
@@ -170,7 +151,7 @@ for _, row in filtered_df.iterrows():
             f"""
             <div style="background: #ffffff; padding: 0.8rem; border-radius: 8px; border: 1px solid #d8e2dc; margin-top: 0.5rem; font-size: 0.9rem;">
                 <strong>💡 Agronomic & Cultivation Guidance:</strong><br>
-                {notes}
+                {esc(notes)}
             </div>
             <div style="margin-top: 0.4rem; font-size: 0.85rem; color: #555b6e;">
                 <strong>📍 Major Producing Regions in India:</strong> {regions}

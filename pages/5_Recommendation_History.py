@@ -1,35 +1,15 @@
 """
-KROP - Page 5: Recommendation History and Historical Comparison
+KROP - Recommendation History and Historical Comparison
 Persistent audit trail of previously generated crop recommendations using SQLite.
-Strictly zero hardware dependencies, absolutely ZERO NPK.
 """
 
-import streamlit as st
-import plotly.express as px
-import plotly.graph_objects as go
 import pandas as pd
-from datetime import datetime
+import plotly.express as px
+import streamlit as st
 
-from src.ui_components import (
-    apply_custom_styles,
-    render_sidebar_header,
-    init_session_state,
-    get_plotly_theme
-)
-from src.database import DatabaseManager
+from src.ui_components import esc, flash, get_plotly_theme, show_flash
 
-st.set_page_config(
-    page_title="Recommendation History - KROP",
-    page_icon="🌾",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-apply_custom_styles()
-init_session_state()
-render_sidebar_header()
-
-db: DatabaseManager = st.session_state["db_manager"]
+db = st.session_state["db_manager"]
 
 st.title("📜 Recommendation History & Analysis")
 st.write(
@@ -37,7 +17,9 @@ st.write(
     "Compare suitability trends and audit evidence-based decisions across seasons."
 )
 
+show_flash()
 records = db.get_recommendation_history(limit=50)
+total_records = db.count_recommendations()
 
 if not records:
     st.info("No recommendation history found yet. Head over to **Crop Recommendations** to generate and save your first advisory.")
@@ -45,7 +27,10 @@ if not records:
         st.switch_page("pages/3_Crop_Recommendations.py")
     st.stop()
 
-st.metric("Total Stored Advisory Records", len(records), delta=f"Earliest: {records[-1]['created_at'][:10]}")
+st.metric(
+    "Total Stored Advisory Records", total_records,
+    delta=f"Showing latest {len(records)} | oldest shown: {records[-1]['created_at'][:10]}", delta_color="off",
+)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -55,7 +40,7 @@ st.markdown("### 📊 Cross-Advisory Crop Score Trends")
 comparison_data = []
 for r in records[:10]:
     date_label = r["created_at"][:16].replace("T", " ")
-    loc_label = f"{r.get('district', 'Farm')} ({date_label})"
+    loc_label = f"{r.get('district') or 'Farm'} ({date_label})"
     crops = r.get("recommended_crops", [])
     for c in crops[:3]:
         comparison_data.append({
@@ -92,37 +77,36 @@ st.markdown("### 🗂️ Stored Advisory Records")
 for rec in records:
     r_id = rec["id"]
     created = rec["created_at"][:19].replace("T", " ")
-    dist = rec.get("district", "General")
-    state = rec.get("state", "India")
-    village = rec.get("village", "")
-    area = rec.get("land_area", "")
-    unit = rec.get("land_unit", "")
-    soil = rec.get("soil_type", "Unknown")
+    dist = rec.get("district") or "Unlinked profile"
+    state = rec.get("state") or ""
+    village = rec.get("village") or ""
+    area = rec.get("land_area") or "-"
+    unit = rec.get("land_unit") or ""
+    soil = rec.get("soil_type") or "Unknown"
     rec_crops = rec.get("recommended_crops", [])
     w_sum = rec.get("weather_summary", {})
 
     top_crop_names = [f"#{c.get('rank', 1)} {c.get('crop_name')} ({c.get('composite_score', 0)}%)" for c in rec_crops[:3]]
 
-    with st.expander(f"📍 #{r_id} &bull; {village} {dist}, {state} &bull; {created} &bull; {', '.join(top_crop_names)}", expanded=False):
+    with st.expander(f"📍 #{r_id} · {village} {dist}, {state} · {created} · {', '.join(top_crop_names)}", expanded=False):
         c_det1, c_det2 = st.columns([2, 1.2])
 
         with c_det1:
             st.markdown(f"**Field Parameters:** {area} {unit} | Soil: {soil} | Recorded at: {created}")
             st.markdown("##### Recommended Candidates:")
             for c in rec_crops:
+                reasons = c.get("explanation_points") or ["Verified regional suitability"]
                 st.markdown(
                     f"""
                     <div style="background: #ffffff; padding: 0.6rem 0.8rem; border-radius: 6px; border: 1px solid #e0e5e2; margin-bottom: 0.4rem; font-size: 0.88rem;">
-                        <strong>#{c.get('rank', 1)} {c.get('crop_name')}</strong> &mdash; 
-                        Suitability: <strong style="color: #2d6a4f;">{c.get('composite_score')}%</strong> | 
-                        Water: {c.get('water_requirement')} | Soil: {c.get('suitable_soil', 'Loam')} | 
-                        Duration: {c.get('growing_duration', 'N/A')}
-                        <div style="margin-top: 0.3rem; color: #555b6e; font-size: 0.83rem;">
-                            <em>{c.get('explanation_points', ['Verified regional suitability'])[0]}</em>
-                        </div>
+                        <strong>#{esc(c.get('rank', 1))} {esc(c.get('crop_name'))}</strong> &mdash;
+                        Suitability: <strong style="color: #2d6a4f;">{esc(c.get('composite_score'))}%</strong> |
+                        Water: {esc(c.get('water_requirement', 'N/A'))} | Soil: {esc(c.get('suitable_soil', 'N/A'))} |
+                        Duration: {esc(c.get('growing_duration', 'N/A'))}
+                        <div style="margin-top: 0.3rem; color: #555b6e; font-size: 0.83rem;"><em>{esc(reasons[0])}</em></div>
                     </div>
                     """,
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
 
         with c_det2:
@@ -135,12 +119,12 @@ for rec in records:
             else:
                 st.markdown("_No live weather logged for this run._")
 
-            st.markdown(f"- **ML Model Version:** {rec.get('model_version', '1.0.0')}")
+            st.markdown(f"- **ML Model Version:** {rec.get('model_version', 'n/a')}")
 
             # Delete Record Action with confirmation checkbox
             st.markdown("---")
             confirm_del = st.checkbox(f"Confirm deletion of Record #{r_id}", key=f"del_chk_{r_id}")
             if st.button(f"🗑️ Delete Record #{r_id}", key=f"btn_del_{r_id}", disabled=not confirm_del):
                 db.delete_recommendation(r_id)
-                st.success(f"Record #{r_id} permanently deleted.")
+                flash(f"Record #{r_id} permanently deleted.")
                 st.rerun()

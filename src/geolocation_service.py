@@ -76,6 +76,10 @@ def get_approximate_coordinates(state: str, district: Optional[str] = None) -> D
 _GEO_CACHE: Dict[str, List[Dict]] = {}
 
 
+def _normalize(text: Optional[str]) -> str:
+    return (text or "").strip().lower()
+
+
 class GeolocationService:
     """Provides geocoding queries with fallback to regional state centroids."""
 
@@ -84,72 +88,82 @@ class GeolocationService:
 
     def search_locations(self, query: str, state_hint: Optional[str] = None) -> List[Dict]:
         """
-        Queries Open-Meteo Geocoding API for locations matching query.
-        Returns formatted list of matching location candidate dictionaries.
+        Queries Open-Meteo Geocoding API for Indian locations matching the query.
+        Results in the hinted state are listed first. Falls back to the state centroid
+        (flagged with ``is_fallback``) when the service is unreachable or has no match.
         """
         clean_q = query.strip()
         if not clean_q:
             return []
 
-        cache_key = f"{clean_q.lower()}_{state_hint.lower() if state_hint else ''}"
+        cache_key = f"{clean_q.lower()}|{_normalize(state_hint)}"
         if cache_key in _GEO_CACHE:
             return _GEO_CACHE[cache_key]
 
-        search_text = f"{clean_q}, {state_hint}, India" if state_hint else f"{clean_q}, India"
         params = {
             "name": clean_q,
-            "count": 6,
+            "count": 10,
             "language": "en",
-            "format": "json"
+            "format": "json",
+            "countryCode": "IN",
         }
 
         try:
             resp = requests.get(GEOCODING_URL, params=params, timeout=self.timeout)
-            if resp.status_code == 200:
-                data = resp.json()
-                raw_results = data.get("results", [])
-                
-                # Filter / prioritize results in India
-                indian_results = []
-                for item in raw_results:
-                    if item.get("country_code", "").upper() == "IN" or item.get("country", "").lower() == "india":
-                        indian_results.append({
-                            "name": item.get("name"),
-                            "district": item.get("admin2", item.get("admin3", "")),
-                            "state": item.get("admin1", ""),
-                            "country": item.get("country", "India"),
-                            "latitude": float(item.get("latitude")),
-                            "longitude": float(item.get("longitude")),
-                            "elevation": item.get("elevation"),
-                            "display_label": f"{item.get('name')}, {item.get('admin1', '')} ({item.get('latitude'):.4f}°N, {item.get('longitude'):.4f}°E)"
-                        })
+            resp.raise_for_status()
+            candidates = []
+            for item in resp.json().get("results", []):
+                if item.get("latitude") is None or item.get("longitude") is None:
+                    continue
+                if item.get("country_code", "IN").upper() != "IN":
+                    continue
+                lat, lon = float(item["latitude"]), float(item["longitude"])
+                state = item.get("admin1", "")
+                candidates.append({
+                    "name": item.get("name"),
+                    "district": item.get("admin2") or item.get("admin3") or "",
+                    "state": state,
+                    "country": item.get("country", "India"),
+                    "latitude": lat,
+                    "longitude": lon,
+                    "elevation": item.get("elevation"),
+                    "display_label": f"{item.get('name')}, {state} ({lat:.4f}°N, {lon:.4f}°E)",
+                })
 
-                if indian_results:
-                    _GEO_CACHE[cache_key] = indian_results
-                    return indian_results
-        except Exception as e:
+            if state_hint:
+                hint = _normalize(state_hint)
+                # Stable sort: matches inside the selected state first, original order otherwise.
+                candidates.sort(key=lambda c: _normalize(c["state"]) != hint)
+
+            candidates = candidates[:6]
+            if candidates:
+                _GEO_CACHE[cache_key] = candidates
+                return candidates
+        except (requests.RequestException, ValueError) as e:
             logger.warning("Geocoding request failed for '%s': %s", clean_q, e)
 
-        # Fallback to state capital coordinates if available
-        if state_hint and state_hint.strip().upper() in STATE_CAPITAL_COORDINATES:
-            fallback = STATE_CAPITAL_COORDINATES[state_hint.strip().upper()]
-            fb_res = [{
-                "name": f"{clean_q} ({fallback['name']} region)",
-                "district": clean_q,
-                "state": fallback["state"],
-                "country": "India",
-                "latitude": fallback["lat"],
-                "longitude": fallback["lon"],
-                "elevation": 500.0,
-                "display_label": f"{clean_q} (Approx {fallback['state']}: {fallback['lat']:.4f}°N, {fallback['lon']:.4f}°E)",
-                "is_fallback": True
-            }]
-            return fb_res
+        return self._state_centroid_fallback(clean_q, state_hint)
 
-        return []
+    @staticmethod
+    def _state_centroid_fallback(query: str, state_hint: Optional[str]) -> List[Dict]:
+        """Approximate location at the hinted state's reference coordinates."""
+        key = (state_hint or "").strip().upper()
+        fallback = STATE_CAPITAL_COORDINATES.get(key)
+        if not fallback:
+            return []
+        return [{
+            "name": f"{query} ({fallback['name']} region)",
+            "district": query,
+            "state": fallback["state"],
+            "country": "India",
+            "latitude": fallback["lat"],
+            "longitude": fallback["lon"],
+            "elevation": None,
+            "display_label": f"{query} (Approx. {fallback['state']}: {fallback['lat']:.4f}°N, {fallback['lon']:.4f}°E)",
+            "is_fallback": True,
+        }]
 
 
 if __name__ == "__main__":
     geo = GeolocationService()
-    res = geo.search_locations("Latur", state_hint="Maharashtra")
-    print("Found locations for Latur:", res)
+    print("Found locations for Latur:", geo.search_locations("Latur", state_hint="Maharashtra"))

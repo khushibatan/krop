@@ -8,10 +8,9 @@ Strictly adheres to:
 """
 
 import logging
-from pathlib import Path
-from typing import Dict, Optional, Tuple, Any
-import pandas as pd
+from typing import Tuple
 import numpy as np
+import pandas as pd
 
 logger = logging.getLogger("krop.feature_engineering")
 
@@ -48,72 +47,66 @@ def convert_to_hectares(area: float, unit: str) -> float:
 
 
 class FeatureEngineer:
-    """Extracts and formats features for model training and inference."""
+    """
+    Extracts and formats features for model training and inference.
+
+    The model deliberately uses only regional and climatic signals (state, season, IMD rainfall
+    normals). Historical ``Area`` values are district-level totals, not individual farm sizes, so
+    they are used as training *sample weights* rather than as an input feature.
+    """
 
     def __init__(self):
-        self.feature_columns = [
-            "State_Name",
-            "Season",
-            "area_hectares",
-            "area_category",
-            "annual_rainfall_mm",
-            "seasonal_rainfall_mm",
-            "rainfall_ratio"
-        ]
+        self.categorical_features = ["State_Name", "Season"]
+        self.numerical_features = ["annual_rainfall_mm", "seasonal_rainfall_mm", "rainfall_ratio"]
+        self.feature_columns = self.categorical_features + self.numerical_features
         self.target_column = "Crop"
+        self.weight_column = "Area"
 
-    def extract_training_features(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
-        """Engineers feature matrix X and target y from preprocessed historical dataset."""
+    @staticmethod
+    def rainfall_ratio(seasonal_rainfall_mm, annual_rainfall_mm):
+        """Seasonal share of annual rainfall, bounded to [0, 1.5]."""
+        return (seasonal_rainfall_mm / (annual_rainfall_mm + 1e-5)).clip(0.0, 1.5) \
+            if hasattr(seasonal_rainfall_mm, "clip") \
+            else min(1.5, max(0.0, seasonal_rainfall_mm / (annual_rainfall_mm + 1e-5)))
+
+    def extract_training_features(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+        """
+        Engineers the feature matrix X, target y and sample weights from the preprocessed dataset.
+        Weights are sqrt(cultivated area): regionally dominant crops count for more, without letting
+        a handful of very large districts swamp the minor crops that smallholders often grow.
+        """
         df_feat = df.copy()
-
-        df_feat["area_hectares"] = df_feat["Area"].astype(float)
-        df_feat["area_category"] = df_feat["area_hectares"].apply(categorize_land_area)
-        
-        # Rainfall indicators
         df_feat["annual_rainfall_mm"] = df_feat["annual_rainfall_mm"].astype(float)
         df_feat["seasonal_rainfall_mm"] = df_feat["seasonal_rainfall_mm"].astype(float)
-        df_feat["rainfall_ratio"] = (
-            df_feat["seasonal_rainfall_mm"] / (df_feat["annual_rainfall_mm"] + 1e-5)
-        ).clip(0.0, 1.5)
+        df_feat["rainfall_ratio"] = self.rainfall_ratio(
+            df_feat["seasonal_rainfall_mm"], df_feat["annual_rainfall_mm"]
+        )
 
         X = df_feat[self.feature_columns].copy()
         y = df_feat[self.target_column].copy()
+        weights = np.sqrt(df_feat[self.weight_column].astype(float).clip(lower=0.0))
 
         logger.info("Feature engineering complete: %d samples, %d features", X.shape[0], X.shape[1])
-        return X, y
+        return X, y, weights
 
     def build_inference_feature(
         self,
         state: str,
         season: str,
-        area_ha: float,
         annual_rainfall_mm: float,
-        seasonal_rainfall_mm: float
+        seasonal_rainfall_mm: float,
     ) -> pd.DataFrame:
-        """Constructs a single-row feature DataFrame strictly matching training features."""
-        area_cat = categorize_land_area(area_ha)
-        rf_ratio = round(min(1.5, max(0.0, seasonal_rainfall_mm / (annual_rainfall_mm + 1e-5))), 4)
-
+        """Constructs a single-row feature DataFrame strictly matching the training features."""
         row = {
             "State_Name": state.strip(),
             "Season": season.strip(),
-            "area_hectares": float(area_ha),
-            "area_category": area_cat,
             "annual_rainfall_mm": float(annual_rainfall_mm),
             "seasonal_rainfall_mm": float(seasonal_rainfall_mm),
-            "rainfall_ratio": float(rf_ratio)
+            "rainfall_ratio": round(float(self.rainfall_ratio(seasonal_rainfall_mm, annual_rainfall_mm)), 4),
         }
         return pd.DataFrame([row])[self.feature_columns]
 
 
 if __name__ == "__main__":
     fe = FeatureEngineer()
-    test_vec = fe.build_inference_feature(
-        state="Maharashtra",
-        season="Kharif",
-        area_ha=2.5,
-        annual_rainfall_mm=1100.0,
-        seasonal_rainfall_mm=850.0
-    )
-    print("Inference feature shape:", test_vec.shape)
-    print("Inference feature vector:\n", test_vec)
+    print(fe.build_inference_feature("Maharashtra", "Kharif", 1100.0, 850.0))

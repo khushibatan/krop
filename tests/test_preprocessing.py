@@ -6,6 +6,7 @@ Strict verification of ZERO NPK and data transformations.
 import pytest
 import pandas as pd
 import numpy as np
+from src.config import CLEAN_DATASET_PATH
 from src.data_preprocessing import DataPreprocessor, normalize_name, SEASON_MAPPING
 from src.feature_engineering import categorize_land_area, convert_to_hectares, FeatureEngineer
 
@@ -43,7 +44,6 @@ def test_feature_engineer_vector():
     vec = fe.build_inference_feature(
         state="Maharashtra",
         season="Kharif",
-        area_ha=2.5,
         annual_rainfall_mm=1000.0,
         seasonal_rainfall_mm=750.0
     )
@@ -51,7 +51,8 @@ def test_feature_engineer_vector():
     assert len(vec) == 1
     assert vec.iloc[0]["State_Name"] == "Maharashtra"
     assert vec.iloc[0]["Season"] == "Kharif"
-    assert vec.iloc[0]["area_category"] == "Semi-Medium"
+    assert list(vec.columns) == fe.feature_columns
+    assert "area_hectares" not in vec.columns  # district-level area is not a farm-size feature
     assert vec.iloc[0]["rainfall_ratio"] == pytest.approx(0.75, abs=1e-4)
 
     # STRICT ZERO NPK ASSERTION
@@ -61,8 +62,7 @@ def test_feature_engineer_vector():
 
 def test_clean_dataset_strict_zero_npk():
     """Verify that processed dataset exists and has absolutely zero NPK columns."""
-    processed_path = "data/processed/clean_crop_rainfall.csv"
-    df = pd.read_csv(processed_path, nrows=100)
+    df = pd.read_csv(CLEAN_DATASET_PATH, nrows=100)
     for col in df.columns:
         upper_c = col.upper()
         assert "NITROGEN" not in upper_c

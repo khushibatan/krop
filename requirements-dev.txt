@@ -1,0 +1,5 @@
+# Development, testing and data-acquisition dependencies
+-r requirements.txt
+pytest==9.2.0
+kagglehub==1.0.3
+kaggle==2.2.5

@@ -7,17 +7,14 @@ Adheres strictly to the KROP specification:
 - Absolutely ZERO NPK usage
 """
 
-import os
 import shutil
 import logging
 from pathlib import Path
 import pandas as pd
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("krop.acquire_data")
+from src.config import PROCESSED_DATA_DIR, RAW_DATA_DIR, configure_logging
 
-RAW_DATA_DIR = Path("data/raw")
-PROCESSED_DATA_DIR = Path("data/processed")
+logger = logging.getLogger("krop.acquire_data")
 
 DATASETS_METADATA = [
     {
@@ -78,8 +75,8 @@ def acquire_kagglehub_dataset(dataset_info: dict, target_dir: Path) -> dict:
 
     # Copy files from cache to target_dir if different
     if download_path and Path(download_path) != target_dir:
-        for file_name in os.listdir(download_path):
-            src_file = Path(download_path) / file_name
+        for src_file in Path(download_path).iterdir():
+            file_name = src_file.name
             dst_file = target_dir / file_name
             if src_file.is_file():
                 shutil.copy2(src_file, dst_file)
@@ -116,6 +113,7 @@ def acquire_kagglehub_dataset(dataset_info: dict, target_dir: Path) -> dict:
 
 def run_acquisition():
     """Acquires all configured datasets and outputs summary."""
+    configure_logging()
     logger.info("=== KROP DATASET ACQUISITION PIPELINE ===")
     RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)

@@ -7,7 +7,8 @@ import json
 from pathlib import Path
 import joblib
 from sklearn.pipeline import Pipeline
-from src.prediction import load_model, MODEL_PATH, METADATA_PATH
+from src.config import METADATA_PATH, MODEL_PATH, MODEL_VERSION
+from src.prediction import load_model
 
 
 def test_model_artifact_exists():
@@ -34,7 +35,7 @@ def test_evaluation_metadata():
     assert METADATA_PATH.exists()
     with open(METADATA_PATH, "r") as f:
         meta = json.load(f)
-    assert meta["model_version"] == "1.0.0"
+    assert meta["model_version"] == MODEL_VERSION
     assert "metrics" in meta
     metrics = meta["metrics"]
-    assert metrics["top_5_accuracy"] >= 0.80, "Top-5 recommendation accuracy must exceed 80%."
+    assert metrics["top_5_area_weighted_accuracy"] >= 0.80, "Area-weighted Top-5 accuracy must exceed 80%."

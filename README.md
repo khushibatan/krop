@@ -1,8 +1,8 @@
 # KROP: Smart Crop Planning and Recommendation System
 
-[![Python](https://img.shields.io/badge/Python-3.13-2d6a4f.svg)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.42+-FF4B4B.svg)](https://streamlit.io/)
-[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.6+-F7931E.svg)](https://scikit-learn.org/)
+[![Python](https://img.shields.io/badge/Python-3.13+-2d6a4f.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.67-FF4B4B.svg)](https://streamlit.io/)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.9-F7931E.svg)](https://scikit-learn.org/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Zero NPK](https://img.shields.io/badge/Zero--NPK-Guaranteed-brightgreen.svg)]()
 [![Zero Hardware](https://img.shields.io/badge/Hardware--Free-100%25--Software-success.svg)]()
@@ -50,8 +50,8 @@ Existing digital tools often suffer from:
 - **Open-Meteo Geocoding**: Automatic geographical coordinate resolution across Indian villages, towns, and districts.
 - **Live Weather Dashboard**: Real-time ambient telemetry and 7-day precipitation forecasts to guide immediate sowing windows.
 - **Multi-Factor Recommendation Engine**:
-  - Stage 1: Random Forest probabilistic candidate generation (Top-5 Accuracy > 84%).
-  - Stage 2: Water balance verification against farm irrigation and seasonal rainfall normals.
+  - Stage 1: Random Forest probabilistic candidate generation (area-weighted Top-5 accuracy of 93%).
+  - Stage 2: Season eligibility filtering and water balance verification against farm irrigation and seasonal rainfall normals.
   - Stage 3: Soil type compatibility matching (handles "Unknown" soil without penalty).
   - Stage 4: Live temperature growth-window evaluation.
   - Stage 5: Transparent composite scoring (0–100%) and plain-language evidence generation.
@@ -66,15 +66,15 @@ Existing digital tools often suffer from:
 | Layer | Technology | Version | Purpose |
 |---|---|---|---|
 | **Runtime** | Python | 3.13+ | Core execution runtime |
-| **User Interface** | Streamlit | >= 1.30.0 | Responsive AgriTech web interface |
-| **Machine Learning** | Scikit-learn | >= 1.3.0 | Multi-class Random Forest classification pipeline |
-| **Model Storage** | Joblib | >= 1.3.0 | Pipeline serialization and compressed artifact storage |
-| **Data Processing** | Pandas, NumPy | >= 2.0.0, >= 1.24.0 | Data wrangling, joining, feature extraction |
+| **User Interface** | Streamlit | 1.67 | Multipage AgriTech web interface (`st.navigation`) |
+| **Machine Learning** | Scikit-learn | 1.9 | Multi-class Random Forest classification pipeline |
+| **Model Storage** | Joblib | 1.6 | Pipeline serialization and compressed artifact storage |
+| **Data Processing** | Pandas, NumPy | 3.1, 2.5 | Data wrangling, joining, feature extraction |
 | **Database** | SQLite 3 | Built-in | Relational persistent storage for profiles & history |
 | **Weather API** | Open-Meteo | Free REST API | Live ambient weather & 7-day forecast |
 | **Geocoding API** | Open-Meteo Geocoding | Free REST API | Indian village/town/district coordinate search |
-| **Visualizations** | Plotly | >= 5.18.0 | Interactive charts matching KROP visual identity |
-| **Testing** | Pytest | >= 8.0.0 | Automated unit and integration testing suite |
+| **Visualizations** | Plotly | 7.1 | Interactive charts matching KROP visual identity |
+| **Testing** | Pytest, Streamlit AppTest | 9.2 | Unit, integration and headless UI smoke tests |
 
 ---
 
@@ -82,9 +82,9 @@ Existing digital tools often suffer from:
 
 ```
 krop/
-├── app.py                           # Main application entry point & dashboard
+├── app.py                           # Entry point: shared setup + st.navigation router
 ├── pages/
-│   ├── 1_Home.py                    # Home dashboard view
+│   ├── 1_Home.py                    # Home dashboard (KPIs, quick actions, weather)
 │   ├── 2_Farm_Profile.py            # Farm characteristics, geocoding & profile management
 │   ├── 3_Crop_Recommendations.py    # Recommendation generation, transparent ranking & scoring
 │   ├── 4_Crop_Insights.py           # ICAR agronomic catalog, category filters & duration charts
@@ -92,10 +92,11 @@ krop/
 │   └── 6_About.py                   # Architecture, objectives, methodology & disclaimers
 ├── src/
 │   ├── __init__.py                  # Package definition
+│   ├── config.py                    # Central paths, versions, .env loading, logging setup
 │   ├── acquire_data.py              # Automated Kaggle/KaggleHub dataset downloader
 │   ├── data_loader.py               # Raw and processed dataset retrieval
 │   ├── data_preprocessing.py        # String cleaning, season standardization & IMD joins
-│   ├── feature_engineering.py       # Landholding brackets, rainfall ratios & inference vectors
+│   ├── feature_engineering.py       # Rainfall features, sample weights & inference vectors
 │   ├── train_model.py               # Production ML training pipeline & evaluation reporting
 │   ├── prediction.py                # Model deserialization & probabilistic candidate inference
 │   ├── recommendation_engine.py     # Multi-factor constraint evaluator & explanation generator
@@ -105,7 +106,7 @@ krop/
 │   ├── database.py                  # SQLite database manager with parameterized queries
 │   ├── validation.py                # Input validation for farm profiles and coordinates
 │   ├── utils.py                     # Regional lookups for states, districts & rainfall normals
-│   └── ui_components.py             # Custom AgriTech styling, badges & Plotly themes
+│   └── ui_components.py             # Styling, HTML escaping, shared cards, cached resources
 ├── data/
 │   ├── raw/                         # Raw datasets from official government sources
 │   │   ├── crop_production.csv
@@ -136,11 +137,16 @@ krop/
 │   ├── test_prediction.py           # Candidate inference and probability tests
 │   ├── test_recommendation.py       # Constraint ranking, water balance & soil tests
 │   ├── test_weather.py              # Mock API tests, offline fallbacks & parsing
-│   └── test_database.py             # SQLite CRUD and JSON serialization tests
+│   ├── test_database.py             # SQLite CRUD, rollback, connection-closing tests
+│   ├── test_validation.py           # Farm profile and coordinate validation tests
+│   ├── test_utils.py                # Regional lookups and crop catalog tests
+│   └── test_app.py                  # Headless Streamlit page smoke tests
 ├── .streamlit/
 │   └── config.toml                  # Forest-green theme and server configuration
 ├── .gitignore                       # Clean repository exclusions
-├── requirements.txt                 # Pinned, tested dependencies
+├── LICENSE                          # MIT License
+├── requirements.txt                 # Pinned runtime dependencies
+├── requirements-dev.txt             # Adds pytest and Kaggle tooling
 └── README.md                        # Complete project manual
 ```
 
@@ -153,7 +159,7 @@ KROP relies on authentic open government datasets acquired via Kaggle:
 1. **Crop Production in India (1997–2015)**
    - *Source*: Directorate of Economics and Statistics, Ministry of Agriculture and Farmers Welfare, Govt of India.
    - *Kaggle Reference*: `abhinand05/crop-production-in-india`
-   - *Records*: 246,091 records across 33 states/UTs and 646 districts.
+   - *Records*: 246,091 raw records across 33 states/UTs and 646 districts (206,377 remain after restricting to the 33 catalogued crops).
    - *Variables*: State, District, Crop_Year, Season, Crop, Area (ha), Production (tonnes).
 
 2. **Rainfall in India (District Normals & Historical Records)**
@@ -172,10 +178,10 @@ KROP relies on authentic open government datasets acquired via Kaggle:
 An automated script downloads and extracts the raw datasets using `kagglehub`:
 
 ```powershell
-python src/acquire_data.py
+python -m src.acquire_data
 ```
 
-The script will:
+(Requires `pip install -r requirements-dev.txt`.) The script will:
 1. Query the Kaggle repository for `abhinand05/crop-production-in-india` and `rajanand/rainfall-in-india`.
 2. Extract the CSV archives into `data/raw/`.
 3. Validate row counts, columns, and file integrity.
@@ -207,13 +213,13 @@ Features are engineered with strict consistency between offline training and rea
 
 - **Geographical**: `State_Name` (Categorical, OneHotEncoded).
 - **Seasonal**: `Season` (Categorical: `Kharif`, `Rabi`, `Summer`, `Whole Year`).
-- **Farm Scale**:
-  - `area_hectares` (Numerical, StandardScaled).
-  - `area_category` (Categorical: `Marginal` < 1ha, `Small` 1–2ha, `Semi-Medium` 2–4ha, `Medium` 4–10ha, `Large` > 10ha based on official Indian Agriculture Census classifications).
 - **Climate & Hydrology**:
   - `annual_rainfall_mm` (Numerical, normal total precipitation).
   - `seasonal_rainfall_mm` (Numerical, normal seasonal rainfall).
   - `rainfall_ratio` (Numerical, ratio of seasonal to annual precipitation).
+- **Training sample weights**: `sqrt(Area)`. The `Area` column of the survey is the *district-level total* area under a crop, not an individual farm size, so it is deliberately **not** used as a feature (feeding a 2-hectare farm into a model trained on district totals matched smallholders to the wrong kind of record). Weighting by the square root of cultivated area lets regionally dominant crops carry more evidence without letting very large districts swamp minor crops.
+
+The farmer's land area is stored in the profile and converted to hectares (acres, bighas, gunthas supported) for reporting, but it does not alter the ML candidates.
 
 ---
 
@@ -221,11 +227,11 @@ Features are engineered with strict consistency between offline training and rea
 
 The machine learning core is built using a Scikit-learn `Pipeline` composed of:
 1. `ColumnTransformer`: One-Hot Encoding for categorical features (`handle_unknown='ignore'`), and `StandardScaler` for numerical metrics.
-2. `RandomForestClassifier`: 150 estimators, max depth of 25, balanced subsample weighting to handle rare staple crops across 33 target classes.
+2. `RandomForestClassifier`: 60 estimators, max depth of 20, trained with `sqrt(Area)` sample weights across 33 target classes.
 
 ### Training the Model
 
-Execute the training script from Windows PowerShell:
+Run the training script from the project root:
 
 ```powershell
 python -m src.train_model
@@ -237,16 +243,17 @@ The script trains the model on an 80/20 stratified split, calculates comprehensi
 
 ## 12. Model Evaluation Results
 
-Evaluated on 41,276 unseen test records from the 206k survey dataset:
+Evaluated on 41,276 held-out survey records (stratified 80/20 split) from the 206k-record dataset:
 
-| Metric | Score | Agronomic Interpretation |
-|---|---|---|
-| **Top-1 Exact Match** | **42.55%** | Exact match on a single highest-predicted crop out of 33 options (random baseline is 3.03%). |
-| **Top-3 Recommendation Accuracy** | **72.08%** | A regionally viable historical crop is present in the top 3 recommendations. |
-| **Top-5 Recommendation Accuracy** | **84.28%** | Over 84% probability that the candidate list contains a historically proven regional crop. |
-| **Weighted F1 Score** | **42.87%** | Harmonic mean of precision and recall weighted by crop cultivation frequencies. |
+| Metric | Area-weighted | Per record | Interpretation |
+|---|---|---|---|
+| **Top-1** | **60.54%** | 13.12% | The model's single best pick matches the crop grown on that share of cultivated area. |
+| **Top-3** | **86.13%** | 35.82% | A historically grown crop is in the top 3 candidates. |
+| **Top-5** | **93.44%** | 54.11% | A historically grown crop is in the top 5 candidates (random baseline for a single guess: 3.03%). |
 
-*Detailed per-crop precision, recall, and support statistics are saved in `models/evaluation/model_evaluation_report.md`.*
+*Area-weighted* metrics weight each test record by its cultivated area, which reflects what farmers actually grow. *Per-record* metrics count every record equally, so many tiny minor-crop records pull them down; they are reported for transparency. Because inputs are regional (state, season, rainfall), the model is a candidate generator, not a final decision-maker: the agronomic stages below re-rank its output.
+
+*Detailed per-crop statistics are saved in `models/evaluation/model_evaluation_report.md`. Re-running training regenerates these numbers.*
 
 ---
 
@@ -262,7 +269,7 @@ Rather than relying on a black-box model alone, KROP uses a hybrid decision-supp
                          │
                          ▼
         [Random Forest Pipeline Inference]
-           (Top 12 Candidate Probabilities)
+           (Season-eligible Top 12 Candidates)
                          │
                          ▼
           [Agronomic Constraint Evaluation]
@@ -282,7 +289,9 @@ Rather than relying on a black-box model alone, KROP uses a hybrid decision-supp
 
 $$\text{Composite Score} = 0.35 \times S_{\text{model}} + 0.25 \times S_{\text{water}} + 0.15 \times S_{\text{soil}} + 0.15 \times S_{\text{weather}} + 0.10 \times S_{\text{preference}}$$
 
-*(When the farmer does not specify soil type, the 15% soil weight is automatically redistributed to model confidence and water balance without penalizing the recommendation).*
+- $S_{\text{model}}$ is the candidate's predicted probability relative to the strongest eligible candidate, square-root compressed to $100\sqrt{p / p_{\max}}$ so runners-up stay visible when one staple dominates a region.
+- Crops that cannot be grown in the chosen season (per the ICAR catalog) are excluded before scoring; perennial *Whole Year* crops remain eligible.
+- When the farmer does not specify soil type, the 15% soil weight is redistributed (+5% model, +10% water balance): $0.40\,S_{\text{model}} + 0.35\,S_{\text{water}} + 0.15\,S_{\text{weather}} + 0.10\,S_{\text{preference}}$, without penalizing any crop.
 
 ---
 
@@ -322,40 +331,36 @@ Local persistent SQLite database stored at `database/krop.db`:
 ## 16. Installation & Execution Guide
 
 ### Prerequisites
-- Windows 10 or 11 (64-bit)
-- Python 3.10+ (tested on Python 3.13)
-- Git for Windows
+- macOS, Linux or Windows
+- Python 3.13+ (the pinned dependency versions require it)
 
-### Step-by-Step Windows PowerShell Setup
+### Setup
 
-```powershell
-# 1. Clone or open the repository directory
-cd c:\Users\dell7420\Desktop\code\krop
+```bash
+# 1. Enter the project directory
+cd krop
 
-# 2. Create the Python virtual environment
+# 2. Create and activate a virtual environment
 python -m venv .venv
+source .venv/bin/activate          # Windows PowerShell: .\.venv\Scripts\Activate.ps1
 
-# 3. Activate the virtual environment
-.\.venv\Scripts\Activate.ps1
+# 3. Install dependencies (requirements-dev.txt adds pytest and data-acquisition tools)
+pip install -r requirements-dev.txt
 
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Acquire raw datasets (if not already present in data/raw)
-python src/acquire_data.py
-
-# 6. Preprocess data and generate clean datasets
+# 4. (Optional) Re-acquire raw datasets, rebuild clean data and retrain the model.
+#    The repository already ships with data and a trained model.
+python -m src.acquire_data
 python -m src.data_preprocessing
-
-# 7. Train the machine learning model
 python -m src.train_model
 
-# 8. Run automated tests
+# 5. Run automated tests
 pytest -v
 
-# 9. Launch the Streamlit application
+# 6. Launch the Streamlit application
 streamlit run app.py
 ```
+
+Configuration is optional: copy `.env.example` to `.env` to change `DATABASE_PATH`. All paths resolve relative to the project root, so commands work from any directory.
 
 The application will start locally at:
 👉 **`http://localhost:8501`**
@@ -364,7 +369,7 @@ The application will start locally at:
 
 ## 17. Automated Testing
 
-The project includes an automated test suite with 28 comprehensive test cases across all modules:
+The project includes an automated test suite (unit, integration and headless UI tests) across all modules:
 
 ```powershell
 pytest -v
@@ -373,11 +378,13 @@ pytest -v
 ### Test Coverage Highlights:
 - `tests/test_data_loader.py`: Verifies dataset presence and schema loading.
 - `tests/test_preprocessing.py`: Validates string normalization, landholding brackets, and enforces strict zero NPK checks.
-- `tests/test_model.py`: Confirms Joblib deserialization and verifies Top-5 accuracy exceeds 80%.
+- `tests/test_model.py`: Confirms Joblib deserialization and verifies area-weighted Top-5 accuracy exceeds 80%.
 - `tests/test_prediction.py`: Validates probabilistic outputs and input validation.
 - `tests/test_recommendation.py`: Tests constraint ranking, unknown soil resilience, and drought penalization.
 - `tests/test_weather.py`: Mocks external API calls to test offline timeouts and parsing.
-- `tests/test_database.py`: Tests SQLite CRUD, foreign keys, and JSON serialization.
+- `tests/test_database.py`: Tests SQLite CRUD, foreign keys, rollback, connection cleanup and JSON serialization.
+- `tests/test_validation.py` / `tests/test_utils.py`: Input validation, rainfall resolution order and crop catalog lookups.
+- `tests/test_app.py`: Renders every Streamlit page headlessly (with and without a profile, network mocked off) and checks that user text is HTML-escaped.
 
 ---
 
@@ -386,10 +393,10 @@ pytest -v
 ### Deploying to Streamlit Community Cloud
 1. Push this repository to GitHub.
 2. In Streamlit Community Cloud, click **New App**.
-3. Select the repository, branch `main`, and set the main file path to `app.py`.
+3. Select the repository, your default branch, and set the main file path to `app.py`.
 4. Deploy!
 
-> **Note on Cloud Persistence**: Ephemeral cloud hosts reset local SQLite storage on container rebuilds. For permanent multi-user cloud production, connect `src/database.py` to a managed PostgreSQL service (e.g. Supabase, Neon, or Cloud SQL) by setting `DATABASE_URL` in environment secrets.
+> **Note on Cloud Persistence**: Ephemeral cloud hosts reset local SQLite storage on container rebuilds. For permanent multi-user cloud production, connect `src/database.py` to a managed PostgreSQL service (e.g. Supabase, Neon, or Cloud SQL) (the current implementation is SQLite-only, so a managed database requires adapting `src/database.py`).
 
 ---
 

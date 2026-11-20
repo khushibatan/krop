@@ -5,14 +5,25 @@ Zero hardware dependencies, absolutely ZERO NPK.
 """
 
 import logging
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import pandas as pd
 
+from src.config import CLEAN_DATASET_PATH
+
 logger = logging.getLogger("krop.utils")
 
-PROCESSED_DATA_PATH = Path("data/processed/clean_crop_rainfall.csv")
-DISTRICT_RAIN_PATH = Path("data/raw/district wise rainfall normal.csv")
+PROCESSED_DATA_PATH = CLEAN_DATASET_PATH
+
+RAIN_COLUMNS = ["annual_rainfall_mm", "Jun-Sep", "Jan-Feb", "Mar-May", "Oct-Dec"]
+
+# National fallback normals (mm) used only when neither district nor state data is available.
+NATIONAL_AVERAGE_NORMALS: Dict[str, float] = {
+    "annual": 1100.0,
+    "Jun-Sep": 750.0,
+    "Jan-Feb": 40.0,
+    "Mar-May": 120.0,
+    "Oct-Dec": 190.0,
+}
 
 # Cached lookups
 _STATE_DISTRICT_MAP: Optional[Dict[str, List[str]]] = None
@@ -20,106 +31,99 @@ _DISTRICT_RAINFALL_MAP: Optional[Dict[Tuple[str, str], Dict[str, float]]] = None
 _STATE_RAINFALL_MAP: Optional[Dict[str, Dict[str, float]]] = None
 
 
-def _init_lookups():
-    """Initializes in-memory lookup dictionaries from clean datasets."""
+def _row_to_normals(row: pd.Series) -> Dict[str, float]:
+    return {
+        "annual": float(row["annual_rainfall_mm"]),
+        "Jun-Sep": float(row["Jun-Sep"]),
+        "Jan-Feb": float(row["Jan-Feb"]),
+        "Mar-May": float(row["Mar-May"]),
+        "Oct-Dec": float(row["Oct-Dec"]),
+    }
+
+
+def _init_lookups() -> None:
+    """Initializes in-memory lookup dictionaries from the clean dataset (once per process)."""
     global _STATE_DISTRICT_MAP, _DISTRICT_RAINFALL_MAP, _STATE_RAINFALL_MAP
     if _STATE_DISTRICT_MAP is not None:
         return
 
-    _STATE_DISTRICT_MAP = {}
-    _DISTRICT_RAINFALL_MAP = {}
-    _STATE_RAINFALL_MAP = {}
+    state_districts: Dict[str, List[str]] = {}
+    district_rain: Dict[Tuple[str, str], Dict[str, float]] = {}
+    state_rain: Dict[str, Dict[str, float]] = {}
 
     if PROCESSED_DATA_PATH.exists():
-        df = pd.read_csv(PROCESSED_DATA_PATH, low_memory=False)
-        grouped = df.groupby("State_Name")["District_Name"].unique()
-        for state, dists in grouped.items():
-            _STATE_DISTRICT_MAP[str(state)] = sorted(
-                [str(d).title() for d in dists if str(d).strip()]
+        df = pd.read_csv(
+            PROCESSED_DATA_PATH,
+            usecols=["State_Name", "District_Name", *RAIN_COLUMNS],
+            low_memory=False,
+        )
+        for state, dists in df.groupby("State_Name")["District_Name"].unique().items():
+            state_districts[str(state)] = sorted(
+                {str(d).strip().title() for d in dists if str(d).strip()}
             )
 
-        # Average rainfall per state
-        state_rain = df.groupby("State_Name")[
-            ["annual_rainfall_mm", "Jun-Sep", "Jan-Feb", "Mar-May", "Oct-Dec"]
-        ].mean()
-        for state, row in state_rain.iterrows():
-            _STATE_RAINFALL_MAP[str(state).upper()] = {
-                "annual": float(row["annual_rainfall_mm"]),
-                "Jun-Sep": float(row["Jun-Sep"]),
-                "Jan-Feb": float(row["Jan-Feb"]),
-                "Mar-May": float(row["Mar-May"]),
-                "Oct-Dec": float(row["Oct-Dec"]),
-            }
+        for state, row in df.groupby("State_Name")[RAIN_COLUMNS].mean().iterrows():
+            state_rain[str(state).strip().upper()] = _row_to_normals(row)
 
-        # Average rainfall per district
-        dist_rain = df.groupby(["State_Name", "District_Name"])[
-            ["annual_rainfall_mm", "Jun-Sep", "Jan-Feb", "Mar-May", "Oct-Dec"]
-        ].mean()
-        for (st, dist), row in dist_rain.iterrows():
-            key = (str(st).upper(), str(dist).upper())
-            _DISTRICT_RAINFALL_MAP[key] = {
-                "annual": float(row["annual_rainfall_mm"]),
-                "Jun-Sep": float(row["Jun-Sep"]),
-                "Jan-Feb": float(row["Jan-Feb"]),
-                "Mar-May": float(row["Mar-May"]),
-                "Oct-Dec": float(row["Oct-Dec"]),
-            }
+        grouped = df.groupby(["State_Name", "District_Name"])[RAIN_COLUMNS].mean()
+        for (st, dist), row in grouped.iterrows():
+            district_rain[(str(st).strip().upper(), str(dist).strip().upper())] = _row_to_normals(row)
+    else:
+        logger.warning("Processed dataset not found at %s; regional lookups are empty.", PROCESSED_DATA_PATH)
+
+    _STATE_DISTRICT_MAP, _DISTRICT_RAINFALL_MAP, _STATE_RAINFALL_MAP = (
+        state_districts, district_rain, state_rain,
+    )
 
 
 def get_indian_states() -> List[str]:
     """Returns sorted list of Indian States and UTs present in the agricultural records."""
     _init_lookups()
-    return sorted(list(_STATE_DISTRICT_MAP.keys())) if _STATE_DISTRICT_MAP else []
+    return sorted(_STATE_DISTRICT_MAP)
 
 
 def get_districts_for_state(state: str) -> List[str]:
     """Returns sorted list of districts for a specific state."""
     _init_lookups()
-    if not _STATE_DISTRICT_MAP:
-        return []
     return _STATE_DISTRICT_MAP.get(state, [])
 
 
 def get_district_rainfall_normals(state: str, district: str) -> Dict[str, float]:
-    """Retrieves long-term normal rainfall values (IMD) for a state and district."""
+    """
+    Retrieves long-term normal rainfall values (IMD) for a state and district.
+    Resolution order: exact district -> partial district name -> state average -> national average.
+    """
     _init_lookups()
-    key = (state.strip().upper(), district.strip().upper())
-    if key in _DISTRICT_RAINFALL_MAP:
-        return _DISTRICT_RAINFALL_MAP[key]
+    st_upper = (state or "").strip().upper()
+    dist_upper = (district or "").strip().upper()
 
-    # Partial match on district
-    for (st, dist), vals in _DISTRICT_RAINFALL_MAP.items():
-        if st == state.strip().upper() and (
-            district.strip().upper() in dist or dist in district.strip().upper()
-        ):
-            return vals
+    if dist_upper:
+        exact = _DISTRICT_RAINFALL_MAP.get((st_upper, dist_upper))
+        if exact:
+            return exact
 
-    # Fallback to state average
-    st_upper = state.strip().upper()
+        for (st, dist), vals in _DISTRICT_RAINFALL_MAP.items():
+            if st == st_upper and (dist_upper in dist or dist in dist_upper):
+                return vals
+
     if st_upper in _STATE_RAINFALL_MAP:
         return _STATE_RAINFALL_MAP[st_upper]
 
-    # National average fallback
-    return {
-        "annual": 1100.0,
-        "Jun-Sep": 750.0,
-        "Jan-Feb": 40.0,
-        "Mar-May": 120.0,
-        "Oct-Dec": 190.0,
-    }
+    return dict(NATIONAL_AVERAGE_NORMALS)
 
 
 def compute_seasonal_rainfall(normals: Dict[str, float], season: str) -> float:
     """Computes expected seasonal rainfall in mm based on season and IMD normals."""
-    s = season.strip().title()
+    s = (season or "").strip().title()
     if s == "Kharif":
-        return normals.get("Jun-Sep", 750.0)
-    elif s == "Rabi":
-        return normals.get("Jan-Feb", 40.0) + normals.get("Oct-Dec", 190.0)
-    elif s in ["Summer", "Zaid"]:
-        return normals.get("Mar-May", 120.0)
-    else:  # Whole Year
-        return normals.get("annual", 1100.0)
+        return normals.get("Jun-Sep", NATIONAL_AVERAGE_NORMALS["Jun-Sep"])
+    if s == "Rabi":
+        return normals.get("Jan-Feb", NATIONAL_AVERAGE_NORMALS["Jan-Feb"]) + normals.get(
+            "Oct-Dec", NATIONAL_AVERAGE_NORMALS["Oct-Dec"]
+        )
+    if s in ("Summer", "Zaid"):
+        return normals.get("Mar-May", NATIONAL_AVERAGE_NORMALS["Mar-May"])
+    return normals.get("annual", NATIONAL_AVERAGE_NORMALS["annual"])  # Whole Year
 
 
 if __name__ == "__main__":

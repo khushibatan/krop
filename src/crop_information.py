@@ -5,13 +5,12 @@ Ministry of Agriculture & Farmers Welfare, and State Agricultural Universities.
 Strictly zero NPK. Contains purely agronomic, environmental, water, and soil requirements.
 """
 
-import os
+from functools import lru_cache
 from pathlib import Path
 import pandas as pd
 from typing import Dict, List, Optional
 
-PROCESSED_DATA_DIR = Path("data/processed")
-CROP_INFO_CSV_PATH = PROCESSED_DATA_DIR / "crop_information.csv"
+from src.config import CROP_INFO_CSV_PATH, PROCESSED_DATA_DIR
 
 # Comprehensive authoritative agronomic database for major Indian crops
 CROP_CATALOG = [
@@ -612,32 +611,72 @@ CROP_CATALOG = [
 ]
 
 
-def generate_crop_information_csv(overwrite: bool = True) -> Path:
+def generate_crop_information_csv() -> Path:
     """Generate and persist the validated crop agronomic database."""
     PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    df = pd.DataFrame(CROP_CATALOG)
-    df.to_csv(CROP_INFO_CSV_PATH, index=False)
+    pd.DataFrame(CROP_CATALOG).to_csv(CROP_INFO_CSV_PATH, index=False)
+    load_crop_catalog.cache_clear()
+    _profiles_by_name.cache_clear()
     return CROP_INFO_CSV_PATH
 
 
-def load_crop_catalog() -> pd.DataFrame:
-    """Load the verified crop agronomic database as a DataFrame."""
+@lru_cache(maxsize=1)
+def _load_catalog_cached() -> pd.DataFrame:
     if not CROP_INFO_CSV_PATH.exists():
         generate_crop_information_csv()
     return pd.read_csv(CROP_INFO_CSV_PATH)
 
 
+def load_crop_catalog() -> pd.DataFrame:
+    """Load the verified crop agronomic database as a DataFrame (a fresh copy each call)."""
+    return _load_catalog_cached().copy()
+
+
+load_crop_catalog.cache_clear = _load_catalog_cached.cache_clear  # type: ignore[attr-defined]
+
+
+@lru_cache(maxsize=1)
+def _profiles_by_name() -> Dict[str, Dict]:
+    """Case-insensitive index of crop profiles keyed by lower-cased crop name."""
+    return {
+        str(rec["crop_name"]).lower(): rec
+        for rec in _load_catalog_cached().to_dict(orient="records")
+    }
+
+
 def get_crop_profile(crop_name: str) -> Optional[Dict]:
-    """Retrieve full agronomic profile for a specific crop name."""
-    df = load_crop_catalog()
-    # Normalize lookup
-    matches = df[df["crop_name"].str.lower() == crop_name.strip().lower()]
-    if matches.empty:
-        # Partial match
-        matches = df[df["crop_name"].str.lower().str.contains(crop_name.strip().lower())]
-    if not matches.empty:
-        return matches.iloc[0].to_dict()
+    """Retrieve the full agronomic profile for a crop (exact match, then substring match)."""
+    key = str(crop_name).strip().lower()
+    if not key:
+        return None
+    profiles = _profiles_by_name()
+    if key in profiles:
+        return dict(profiles[key])
+    for name, rec in profiles.items():
+        if key in name:
+            return dict(rec)
     return None
+
+
+_SEASON_ALIASES = {"autumn": "kharif", "winter": "rabi", "zaid": "summer"}
+
+
+def parse_seasons(seasons: str) -> List[str]:
+    """Splits a comma-separated season string into canonical lower-case season names."""
+    tokens = [t.strip().lower() for t in str(seasons or "").split(",") if t.strip()]
+    return [_SEASON_ALIASES.get(t, t) for t in tokens]
+
+
+def is_suitable_for_season(profile: Dict, season: str) -> bool:
+    """
+    True when a crop can be grown in the requested season. Crops with no season data and
+    perennial 'Whole Year' crops are treated as eligible in every season.
+    """
+    allowed = parse_seasons(profile.get("suitable_seasons", ""))
+    if not allowed or "whole year" in allowed:
+        return True
+    wanted = _SEASON_ALIASES.get(str(season).strip().lower(), str(season).strip().lower())
+    return wanted == "whole year" or wanted in allowed
 
 
 def get_crop_categories() -> List[str]:
@@ -657,7 +696,7 @@ def filter_crops(
     if category and category != "All":
         df = df[df["crop_category"] == category]
     if season and season != "All":
-        df = df[df["suitable_seasons"].str.contains(season, case=False, na=False)]
+        df = df[df["suitable_seasons"].str.contains(season, case=False, na=False, regex=False)]
     if water_req and water_req != "All":
         df = df[df["water_requirement"] == water_req]
     if max_duration:
@@ -666,5 +705,5 @@ def filter_crops(
 
 
 if __name__ == "__main__":
-    path = generate_crop_information_csv(overwrite=True)
+    path = generate_crop_information_csv()
     print(f"Generated verified crop agronomic database at: {path} with {len(CROP_CATALOG)} crops.")

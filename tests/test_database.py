@@ -105,3 +105,44 @@ def test_recommendation_crud(test_db):
     del_ok = test_db.delete_recommendation(rec_id)
     assert del_ok is True
     assert test_db.get_recommendation(rec_id) is None
+
+
+def test_connections_are_closed(test_db):
+    import sqlite3
+    with test_db.get_connection() as conn:
+        pass
+    with pytest.raises(sqlite3.ProgrammingError):
+        conn.execute("SELECT 1")
+
+
+def test_failed_transaction_rolls_back(test_db):
+    with pytest.raises(ValueError):
+        with test_db.get_connection() as conn:
+            conn.execute("INSERT INTO recommendations (recommended_crops, recommendation_details, model_version, created_at) VALUES ('[]','{}','x','now')")
+            raise ValueError("boom")
+    assert test_db.count_recommendations() == 0
+
+
+def test_profile_defaults_and_corrupt_json_tolerated(test_db):
+    p_id = test_db.save_farm_profile({"district": "Pune", "state": "Maharashtra", "land_area": "2.5"})
+    profile = test_db.get_farm_profile(p_id)
+    assert profile["land_area"] == 2.5 and profile["soil_type"] == "Unknown"
+
+    rec_id = test_db.save_recommendation(p_id, [], None, {})
+    with test_db.get_connection() as conn:
+        conn.execute("UPDATE recommendations SET recommended_crops = '{not json' WHERE id = ?", (rec_id,))
+    assert test_db.get_recommendation(rec_id)["recommended_crops"] == []
+
+
+def test_latest_profile_and_profile_delete_keeps_history(test_db):
+    first = test_db.save_farm_profile({"district": "A", "state": "S", "land_area": 1})
+    second = test_db.save_farm_profile({"district": "B", "state": "S", "land_area": 1})
+    assert test_db.get_latest_farm_profile()["id"] == second
+    rec_id = test_db.save_recommendation(first, [{"crop_name": "Rice"}], {}, {})
+    test_db.delete_farm_profile(first)
+    assert test_db.get_recommendation(rec_id)["farm_profile_id"] is None
+
+
+def test_recommendation_for_missing_profile_is_saved_unlinked(test_db):
+    rec_id = test_db.save_recommendation(999, [{"crop_name": "Rice"}], {}, {})
+    assert test_db.get_recommendation(rec_id)["farm_profile_id"] is None

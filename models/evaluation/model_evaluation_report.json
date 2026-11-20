@@ -1,6 +1,7 @@
 {
   "model_type": "RandomForestClassifier",
-  "timestamp": "2026-11-20T18:26:02.412205",
+  "training_weights": "sqrt(cultivated area)",
+  "timestamp": "2026-11-20T20:13:21.246372",
   "n_train_samples": 165101,
   "n_test_samples": 41276,
   "n_classes": 33,
@@ -40,235 +41,236 @@
     "Wheat"
   ],
   "metrics": {
-    "top_1_accuracy": 0.4255,
-    "top_3_accuracy": 0.7208,
-    "top_5_accuracy": 0.8428,
-    "weighted_precision": 0.468,
-    "weighted_recall": 0.4255,
-    "weighted_f1_score": 0.4287,
-    "macro_precision": 0.4124,
-    "macro_recall": 0.4401,
-    "macro_f1_score": 0.4082
+    "top_1_accuracy": 0.1312,
+    "top_3_accuracy": 0.3582,
+    "top_5_accuracy": 0.5411,
+    "top_1_area_weighted_accuracy": 0.6054,
+    "top_3_area_weighted_accuracy": 0.8613,
+    "top_5_area_weighted_accuracy": 0.9344,
+    "weighted_precision": 0.1052,
+    "weighted_recall": 0.1312,
+    "weighted_f1_score": 0.0841,
+    "macro_precision": 0.0943,
+    "macro_recall": 0.0927,
+    "macro_f1_score": 0.0684
   },
   "features": [
     "State_Name",
     "Season",
-    "area_hectares",
-    "area_category",
     "annual_rainfall_mm",
     "seasonal_rainfall_mm",
     "rainfall_ratio"
   ],
   "classification_report": {
     "Arhar/Tur": {
-      "precision": 0.40399002493765584,
-      "recall": 0.42744063324538256,
-      "f1-score": 0.4153846153846154,
+      "precision": 0.05150214592274678,
+      "recall": 0.0079155672823219,
+      "f1-score": 0.0137221269296741,
       "support": 1516.0
     },
     "Bajra": {
-      "precision": 0.40014903129657226,
-      "recall": 0.4949308755760369,
-      "f1-score": 0.44252163164400493,
+      "precision": 0.1182458888018794,
+      "recall": 0.1391705069124424,
+      "f1-score": 0.12785774767146485,
       "support": 1085.0
     },
     "Banana": {
-      "precision": 0.37950138504155123,
-      "recall": 0.6401869158878505,
-      "f1-score": 0.4765217391304348,
+      "precision": 0.15904139433551198,
+      "recall": 0.11370716510903427,
+      "f1-score": 0.13260672116257946,
       "support": 642.0
     },
     "Barley": {
-      "precision": 0.4236526946107784,
-      "recall": 0.6738095238095239,
-      "f1-score": 0.5202205882352942,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 840.0
     },
     "Castor seed": {
-      "precision": 0.23298429319371727,
-      "recall": 0.5274074074074074,
-      "f1-score": 0.32319564230594644,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 675.0
     },
     "Coriander": {
-      "precision": 0.29422548120989916,
-      "recall": 0.4762611275964392,
-      "f1-score": 0.36373937677053825,
+      "precision": 0.08695652173913043,
+      "recall": 0.03857566765578635,
+      "f1-score": 0.05344295991778006,
       "support": 674.0
     },
     "Cotton(lint)": {
-      "precision": 0.33620015637216577,
-      "recall": 0.4756637168141593,
-      "f1-score": 0.39395327530920754,
+      "precision": 0.0808,
+      "recall": 0.11172566371681415,
+      "f1-score": 0.09377901578458682,
       "support": 904.0
     },
     "Dry chillies": {
-      "precision": 0.36202057998129095,
-      "recall": 0.2981510015408321,
-      "f1-score": 0.3269961977186312,
+      "precision": 0.1358936484490399,
+      "recall": 0.07087827426810478,
+      "f1-score": 0.09316455696202532,
       "support": 1298.0
     },
     "Dry ginger": {
-      "precision": 0.27454718779790277,
-      "recall": 0.47840531561461797,
-      "f1-score": 0.34887946698970324,
+      "precision": 0.19047619047619047,
+      "recall": 0.013289036544850499,
+      "f1-score": 0.024844720496894408,
       "support": 602.0
     },
     "Garlic": {
-      "precision": 0.3046800382043935,
-      "recall": 0.4848024316109423,
-      "f1-score": 0.3741935483870968,
+      "precision": 0.1532258064516129,
+      "recall": 0.028875379939209727,
+      "f1-score": 0.04859335038363171,
       "support": 658.0
     },
     "Gram": {
-      "precision": 0.5313075506445673,
-      "recall": 0.3919836956521739,
-      "f1-score": 0.4511336982017201,
+      "precision": 0.1008249312557287,
+      "recall": 0.07472826086956522,
+      "f1-score": 0.08583690987124463,
       "support": 1472.0
     },
     "Groundnut": {
-      "precision": 0.431496062992126,
-      "recall": 0.31013016411997735,
-      "f1-score": 0.360882449785973,
+      "precision": 0.16042780748663102,
+      "recall": 0.06791171477079797,
+      "f1-score": 0.09542743538767395,
       "support": 1767.0
     },
     "Horse-gram": {
-      "precision": 0.1969429747207525,
-      "recall": 0.42948717948717946,
-      "f1-score": 0.27005239822652155,
+      "precision": 0.07142857142857142,
+      "recall": 0.014102564102564103,
+      "f1-score": 0.023554603854389723,
       "support": 780.0
     },
     "Jowar": {
-      "precision": 0.3689469638739431,
-      "recall": 0.33970276008492567,
-      "f1-score": 0.3537214443625645,
+      "precision": 0.07314974182444062,
+      "recall": 0.060155697098372256,
+      "f1-score": 0.06601941747572816,
       "support": 1413.0
     },
     "Linseed": {
-      "precision": 0.3786488740617181,
-      "recall": 0.5153234960272418,
-      "f1-score": 0.43653846153846154,
+      "precision": 0.12,
+      "recall": 0.00340522133938706,
+      "f1-score": 0.006622516556291391,
       "support": 881.0
     },
     "Maize": {
-      "precision": 0.6818862275449101,
-      "recall": 0.3265232974910394,
-      "f1-score": 0.44158991759573435,
+      "precision": 0.1541733120680489,
+      "recall": 0.1039426523297491,
+      "f1-score": 0.12417041318775422,
       "support": 2790.0
     },
     "Masoor": {
-      "precision": 0.3849624060150376,
-      "recall": 0.6059171597633136,
-      "f1-score": 0.4708045977011494,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 845.0
     },
     "Moong(Green Gram)": {
-      "precision": 0.44154589371980674,
-      "recall": 0.22141472868217055,
-      "f1-score": 0.29493384962891256,
+      "precision": 0.16718266253869968,
+      "recall": 0.02616279069767442,
+      "f1-score": 0.04524507750314202,
       "support": 2064.0
     },
     "Onion": {
-      "precision": 0.411313518696069,
-      "recall": 0.30599144079885876,
-      "f1-score": 0.350920245398773,
+      "precision": 0.11009174311926606,
+      "recall": 0.025677603423680456,
+      "f1-score": 0.04164256795835743,
       "support": 1402.0
     },
     "Peas & beans (Pulses)": {
-      "precision": 0.33306772908366533,
-      "recall": 0.46187845303867403,
-      "f1-score": 0.387037037037037,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 905.0
     },
     "Potato": {
-      "precision": 0.581798483206934,
-      "recall": 0.3874458874458874,
-      "f1-score": 0.46513642269380684,
+      "precision": 0.1509988249118684,
+      "recall": 0.18542568542568544,
+      "f1-score": 0.16645077720207255,
       "support": 1386.0
     },
     "Ragi": {
-      "precision": 0.2408005164622337,
-      "recall": 0.4499396863691194,
-      "f1-score": 0.3137089991589571,
+      "precision": 0.06501547987616099,
+      "recall": 0.025331724969843185,
+      "f1-score": 0.036458333333333336,
       "support": 829.0
     },
     "Rapeseed &Mustard": {
-      "precision": 0.5415451895043731,
-      "recall": 0.4894598155467721,
-      "f1-score": 0.5141868512110727,
+      "precision": 0.13828238719068414,
+      "recall": 0.06258234519104085,
+      "f1-score": 0.08616780045351474,
       "support": 1518.0
     },
     "Rice": {
-      "precision": 0.8778054862842892,
-      "recall": 0.6991062562065541,
-      "f1-score": 0.7783305693753455,
+      "precision": 0.13121345029239767,
+      "recall": 0.7130089374379345,
+      "f1-score": 0.22163914184287697,
       "support": 3021.0
     },
     "Sesamum": {
-      "precision": 0.3950617283950617,
-      "recall": 0.2476506357103372,
-      "f1-score": 0.30445124023105674,
+      "precision": 0.05614973262032086,
+      "recall": 0.011608623548922056,
+      "f1-score": 0.01923957856161246,
       "support": 1809.0
     },
     "Small millets": {
-      "precision": 0.3157370517928287,
-      "recall": 0.34086021505376346,
-      "f1-score": 0.327817993795243,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 930.0
     },
     "Soyabean": {
-      "precision": 0.2902684563758389,
-      "recall": 0.5389408099688473,
-      "f1-score": 0.37731733914940024,
+      "precision": 0.08948194662480377,
+      "recall": 0.17757009345794392,
+      "f1-score": 0.11899791231732777,
       "support": 642.0
     },
     "Sugarcane": {
-      "precision": 0.6397984886649875,
-      "recall": 0.4810606060606061,
-      "f1-score": 0.5491891891891892,
+      "precision": 0.16439763678397123,
+      "recall": 0.40404040404040403,
+      "f1-score": 0.23370458280080336,
       "support": 1584.0
     },
     "Sunflower": {
-      "precision": 0.2965050732807215,
-      "recall": 0.23608617594254938,
-      "f1-score": 0.26286856571714146,
+      "precision": 0.12222222222222222,
+      "recall": 0.009874326750448833,
+      "f1-score": 0.018272425249169437,
       "support": 1114.0
     },
     "Sweet potato": {
-      "precision": 0.30490018148820325,
-      "recall": 0.4,
-      "f1-score": 0.34603501544799176,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 840.0
     },
     "Turmeric": {
-      "precision": 0.401123595505618,
-      "recall": 0.425,
-      "f1-score": 0.41271676300578036,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
       "support": 840.0
     },
     "Urad": {
-      "precision": 0.4488262910798122,
-      "recall": 0.24263959390862944,
-      "f1-score": 0.31499176276771007,
+      "precision": 0.11683848797250859,
+      "recall": 0.03451776649746193,
+      "f1-score": 0.05329153605015674,
       "support": 1970.0
     },
     "Wheat": {
-      "precision": 0.7025998731769182,
-      "recall": 0.7012658227848101,
-      "f1-score": 0.7019322141273361,
+      "precision": 0.14444444444444443,
+      "recall": 0.5348101265822784,
+      "f1-score": 0.2274562584118439,
       "support": 1580.0
     },
-    "accuracy": 0.4255257292373292,
+    "accuracy": 0.13123849210194785,
     "macro avg": {
-      "precision": 0.4123890754307983,
-      "recall": 0.4401474796741401,
-      "f1-score": 0.408239488097647,
+      "precision": 0.09431712057081457,
+      "recall": 0.09269678181703993,
+      "f1-score": 0.06843056022199787,
       "support": 41276.0
     },
     "weighted avg": {
-      "precision": 0.4680009036636116,
-      "recall": 0.4255257292373292,
-      "f1-score": 0.42869295238278327,
+      "precision": 0.10518752870826498,
+      "recall": 0.13123849210194785,
+      "f1-score": 0.0841020255463706,
       "support": 41276.0
     }
   }

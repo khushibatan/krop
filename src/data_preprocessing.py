@@ -14,7 +14,8 @@ from typing import Dict, List, Optional, Tuple
 import pandas as pd
 import numpy as np
 
-from src.data_loader import DataLoader, PROCESSED_DATA_DIR
+from src.config import CLEAN_DATASET_PATH, PROCESSED_DATA_DIR, configure_logging
+from src.data_loader import DataLoader
 from src.crop_information import load_crop_catalog
 
 logger = logging.getLogger("krop.data_preprocessing")
@@ -189,13 +190,14 @@ class DataPreprocessor:
 
         final_df = self.merge_crop_and_rainfall(clean_crop, clean_rain, state_rain)
         
-        output_path = PROCESSED_DATA_DIR / "clean_crop_rainfall.csv"
+        output_path = CLEAN_DATASET_PATH
         final_df.to_csv(output_path, index=False)
         logger.info("Saved preprocessed dataset to: %s", output_path)
         return output_path
 
 
 if __name__ == "__main__":
+    configure_logging()
     preprocessor = DataPreprocessor()
     path = preprocessor.process_and_save()
     print("Preprocessing completed successfully. Output saved to:", path)
