@@ -247,8 +247,7 @@ def weather_card_html(
             <span style="font-weight: 700; font-size: 1.1rem; color: #1b4332;">{esc(title)}</span>
             <span class="krop-badge">{esc(badge)}</span>
         </div>
-        {sub}
-        <div style="display: flex; align-items: baseline; gap: 1rem; margin: 0.5rem 0;">
+        {sub}<div style="display: flex; align-items: baseline; gap: 1rem; margin: 0.5rem 0;">
             <span style="font-size: 2.2rem; font-weight: 800; color: #2d6a4f;">{curr.get('temperature_c', 25.0):.1f}°C</span>
             <span style="color: #555b6e; font-size: 1rem;">{esc(curr.get('condition', 'Clear'))}</span>
         </div>
